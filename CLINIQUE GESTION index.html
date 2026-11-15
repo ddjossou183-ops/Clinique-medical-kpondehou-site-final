@@ -1,0 +1,2084 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Clinique Médicale Kpondehou — Système de Gestion</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+/* ===== DESIGN SYSTEM ===== */
+:root {
+  --bg:       #050d1a;
+  --bg2:      #071022;
+  --bg3:      #0c1830;
+  --surface:  rgba(255,255,255,0.035);
+  --surf2:    rgba(255,255,255,0.055);
+  --border:   rgba(255,255,255,0.07);
+  --border2:  rgba(255,255,255,0.12);
+  --blue:     #3b82f6;
+  --blue2:    #60a5fa;
+  --cyan:     #06b6d4;
+  --green:    #10b981;
+  --green2:   #6ee7b7;
+  --amber:    #f59e0b;
+  --red:      #ef4444;
+  --violet:   #8b5cf6;
+  --pink:     #ec4899;
+  --text:     #e2eaf6;
+  --text2:    #94adc7;
+  --text3:    #5a7a99;
+  --sidebar-w: 260px;
+  --radius:   14px;
+  --radius-sm: 8px;
+  --radius-lg: 20px;
+  color-scheme: dark;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:999px}
+
+/* ===== LAYOUT ===== */
+#app{display:flex;height:100vh;overflow:hidden}
+
+/* ===== SIDEBAR ===== */
+.sidebar{
+  width:var(--sidebar-w);flex-shrink:0;
+  background:linear-gradient(180deg,var(--bg3),var(--bg2));
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+  position:relative;z-index:10;
+}
+.sidebar::before{
+  content:'';position:absolute;top:-80px;left:-80px;
+  width:280px;height:280px;border-radius:50%;
+  background:radial-gradient(circle,rgba(59,130,246,0.08),transparent 70%);
+  pointer-events:none;
+}
+.sb-head{padding:18px 16px 12px;border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.logo-box{
+  width:44px;height:44px;border-radius:12px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--blue),var(--violet));
+  display:grid;place-items:center;
+  font-family:'JetBrains Mono',monospace;font-weight:500;font-size:15px;color:#fff;
+  box-shadow:0 4px 18px rgba(59,130,246,0.3);
+}
+.brand-info h1{font-size:12px;font-weight:800;letter-spacing:.5px;color:var(--text);line-height:1.2}
+.brand-info p{font-size:10px;color:var(--text3);line-height:1.3;margin-top:2px}
+.clinic-meta{font-size:9.5px;color:var(--text3);line-height:1.6;padding:8px 0 4px}
+
+.nav{flex:1;overflow-y:auto;padding:10px 10px 10px;display:flex;flex-direction:column;gap:2px}
+.nav-item{
+  display:flex;align-items:center;gap:9px;padding:9px 10px;
+  border-radius:var(--radius-sm);border:none;background:transparent;
+  color:var(--text2);cursor:pointer;text-align:left;font-size:13px;font-weight:500;
+  transition:all .15s;width:100%;position:relative;
+}
+.nav-item:hover{background:var(--surface);color:var(--text)}
+.nav-item.active{
+  background:linear-gradient(90deg,rgba(59,130,246,0.12),rgba(139,92,246,0.08));
+  color:#fff;border:1px solid rgba(59,130,246,0.18);
+}
+.nav-item.active::before{
+  content:'';position:absolute;left:0;top:20%;bottom:20%;
+  width:3px;background:var(--blue);border-radius:0 3px 3px 0;
+}
+.nav-item .icon{font-size:15px;flex-shrink:0;opacity:.85}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:999px}
+
+.sb-foot{padding:12px;border-top:1px solid var(--border)}
+.sb-user{display:flex;align-items:center;gap:9px;padding:8px;background:var(--surface);border-radius:var(--radius-sm)}
+.sb-avatar{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#fde68a,#fca5a5);display:grid;place-items:center;font-size:12px;font-weight:700;color:#1a1a1a;flex-shrink:0}
+.sb-user-info{flex:1;min-width:0}
+.sb-user-name{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-user-role{font-size:10px;color:var(--text3)}
+.logout-btn{background:none;border:none;cursor:pointer;color:var(--text3);padding:4px;border-radius:5px;transition:color .15s}
+.logout-btn:hover{color:var(--red)}
+
+/* ===== MAIN AREA ===== */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+.topbar{
+  display:flex;align-items:center;gap:12px;padding:12px 20px;
+  border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;
+}
+.search-box{
+  flex:1;max-width:480px;display:flex;align-items:center;gap:8px;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:8px 12px;transition:border .15s;
+}
+.search-box:focus-within{border-color:var(--blue)}
+.search-box input{background:none;border:none;outline:none;color:var(--text);font-size:13px;flex:1;font-family:inherit}
+.search-box input::placeholder{color:var(--text3)}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.top-badge{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:6px 12px;font-size:12px;font-weight:600;color:var(--text2);
+  display:flex;align-items:center;gap:6px;
+}
+.top-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+#clock{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text3)}
+
+.content{flex:1;overflow-y:auto;padding:20px}
+
+/* ===== VIEWS ===== */
+.view{animation:fadeUp .2s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== CARDS ===== */
+.card{
+  background:linear-gradient(135deg,var(--surface),rgba(255,255,255,0.02));
+  border:1px solid var(--border);border-radius:var(--radius);padding:18px;
+  position:relative;overflow:hidden;
+}
+.card::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent);
+}
+
+/* ===== STAT CARDS ===== */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+.stat-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px;display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden;
+}
+.stat-card::before{
+  content:'';position:absolute;right:-20px;top:-20px;
+  width:80px;height:80px;border-radius:50%;opacity:.08;
+}
+.stat-card.blue::before{background:var(--blue)}
+.stat-card.green::before{background:var(--green)}
+.stat-card.amber::before{background:var(--amber)}
+.stat-card.violet::before{background:var(--violet)}
+.stat-card.red::before{background:var(--red)}
+.stat-card.cyan::before{background:var(--cyan)}
+.stat-icon{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:18px}
+.stat-icon.blue{background:rgba(59,130,246,0.12)}
+.stat-icon.green{background:rgba(16,185,129,0.12)}
+.stat-icon.amber{background:rgba(245,158,11,0.12)}
+.stat-icon.violet{background:rgba(139,92,246,0.12)}
+.stat-icon.red{background:rgba(239,68,68,0.12)}
+.stat-icon.cyan{background:rgba(6,182,212,0.12)}
+.stat-val{font-size:28px;font-weight:800;line-height:1;color:var(--text)}
+.stat-lbl{font-size:12px;color:var(--text3);font-weight:500}
+
+/* ===== TABLE ===== */
+.table-wrap{overflow-x:auto;border-radius:var(--radius-sm)}
+table{width:100%;border-collapse:collapse}
+thead tr{border-bottom:1px solid var(--border)}
+th{padding:10px 12px;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+td{padding:10px 12px;font-size:13px;color:var(--text);border-bottom:1px solid var(--border)}
+tbody tr:hover{background:var(--surface)}
+tbody tr:last-child td{border-bottom:none}
+.td-actions{white-space:nowrap;display:flex;gap:4px}
+
+/* ===== BUTTONS ===== */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;transition:all .15s}
+.btn-primary{background:linear-gradient(135deg,var(--blue),var(--violet));color:#fff;box-shadow:0 2px 12px rgba(59,130,246,0.2)}
+.btn-primary:hover{box-shadow:0 4px 18px rgba(59,130,246,0.35);transform:translateY(-1px)}
+.btn-success{background:linear-gradient(135deg,var(--green),var(--cyan));color:#fff}
+.btn-danger{background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.2)}
+.btn-danger:hover{background:rgba(239,68,68,0.2)}
+.btn-ghost{background:var(--surface);color:var(--text2);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--surf2);color:var(--text)}
+.btn-sm{padding:5px 10px;font-size:12px;border-radius:6px}
+.btn-icon{padding:6px;border-radius:6px}
+
+/* ===== BADGES / PILLS ===== */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.badge-green{background:rgba(16,185,129,.12);color:var(--green2)}
+.badge-red{background:rgba(239,68,68,.12);color:#fca5a5}
+.badge-amber{background:rgba(245,158,11,.12);color:#fcd34d}
+.badge-blue{background:rgba(59,130,246,.12);color:var(--blue2)}
+.badge-violet{background:rgba(139,92,246,.12);color:#c4b5fd}
+.badge-cyan{background:rgba(6,182,212,.12);color:#67e8f9}
+.badge-gray{background:var(--surface);color:var(--text2);border:1px solid var(--border)}
+
+/* ===== FORMS ===== */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+label.lbl{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
+.form-control{
+  padding:9px 12px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-sm);color:var(--text);font-size:13px;font-family:inherit;
+  transition:border .15s;outline:none;
+}
+.form-control:focus{border-color:var(--blue)}
+.form-control::placeholder{color:var(--text3)}
+select.form-control option{background:var(--bg3);color:var(--text)}
+textarea.form-control{resize:vertical;min-height:80px}
+
+/* ===== SECTION HEADER ===== */
+.section-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.section-title{font-size:20px;font-weight:800;color:var(--text)}
+.section-title small{font-size:12px;font-weight:500;color:var(--text3);margin-left:8px}
+.section-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* ===== EMPTY STATE ===== */
+.empty{
+  text-align:center;padding:48px 20px;background:var(--surface);
+  border-radius:var(--radius);border:1px dashed var(--border2);
+}
+.empty-icon{font-size:48px;margin-bottom:12px;opacity:.5}
+.empty-text{color:var(--text3);font-size:13px}
+
+/* ===== PATIENT CARD ===== */
+.patient-row{display:flex;align-items:center;gap:10px}
+.patient-avatar{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,rgba(59,130,246,.2),rgba(139,92,246,.2));display:grid;place-items:center;font-size:13px;font-weight:700;color:var(--blue2);flex-shrink:0}
+
+/* ===== MODAL ===== */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(2,8,20,.75);backdrop-filter:blur(6px);
+  z-index:9999;display:grid;place-items:center;padding:20px;
+  animation:fadeIn .15s ease;
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{
+  background:linear-gradient(180deg,var(--bg3),var(--bg2));
+  border:1px solid var(--border2);border-radius:var(--radius-lg);
+  width:100%;max-width:760px;max-height:90vh;overflow-y:auto;
+  padding:24px;animation:slideUp .2s ease;position:relative;
+}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.modal-sm{max-width:420px}
+.modal-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.modal-title{font-size:17px;font-weight:800}
+.modal-close{background:var(--surface);border:1px solid var(--border);width:30px;height:30px;border-radius:7px;display:grid;place-items:center;cursor:pointer;color:var(--text3);transition:all .15s}
+.modal-close:hover{color:var(--text);background:var(--surf2)}
+.modal-ft{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
+
+/* ===== LOGIN ===== */
+.login-screen{
+  position:fixed;inset:0;z-index:9999;
+  background:radial-gradient(ellipse at 30% 40%,rgba(59,130,246,.1),transparent 60%),
+             radial-gradient(ellipse at 80% 80%,rgba(139,92,246,.08),transparent 60%),
+             var(--bg);
+  display:grid;place-items:center;
+}
+.login-card{
+  width:440px;background:var(--bg3);border:1px solid var(--border2);
+  border-radius:var(--radius-lg);padding:32px;
+  box-shadow:0 32px 80px rgba(0,0,0,.6);
+}
+.login-header{text-align:center;margin-bottom:28px}
+.login-logo{
+  width:64px;height:64px;border-radius:18px;margin:0 auto 14px;
+  background:linear-gradient(135deg,var(--blue),var(--violet));
+  display:grid;place-items:center;font-family:'JetBrains Mono',monospace;
+  font-size:20px;font-weight:500;color:#fff;
+  box-shadow:0 8px 32px rgba(59,130,246,.35);
+}
+.login-header h2{font-size:20px;font-weight:800;margin-bottom:4px}
+.login-header p{font-size:12px;color:var(--text3)}
+
+/* ===== ALERTS ===== */
+.alert{padding:10px 14px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.alert-err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:#fca5a5}
+.alert-ok{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);color:var(--green2)}
+.alert-warn{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);color:#fcd34d}
+.alert-info{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);color:var(--blue2)}
+
+/* ===== TIMELINE ===== */
+.timeline{display:flex;flex-direction:column;gap:0}
+.tl-item{display:flex;gap:14px;padding:12px 0;position:relative}
+.tl-item:not(:last-child)::before{content:'';position:absolute;left:15px;top:44px;bottom:0;width:1px;background:var(--border)}
+.tl-dot{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;font-size:14px;margin-top:2px}
+.tl-dot.blue{background:rgba(59,130,246,.15);border:2px solid rgba(59,130,246,.3)}
+.tl-dot.green{background:rgba(16,185,129,.15);border:2px solid rgba(16,185,129,.3)}
+.tl-dot.amber{background:rgba(245,158,11,.15);border:2px solid rgba(245,158,11,.3)}
+.tl-body{flex:1}
+.tl-title{font-size:13px;font-weight:700;margin-bottom:2px}
+.tl-meta{font-size:11px;color:var(--text3)}
+
+/* ===== FILTERS ===== */
+.filter-tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:3px}
+.filter-tab{padding:5px 12px;border-radius:5px;border:none;background:transparent;color:var(--text3);cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;font-family:inherit}
+.filter-tab.active{background:var(--bg3);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.3)}
+
+/* ===== DIVIDER ===== */
+.divider{height:1px;background:var(--border);margin:14px 0}
+
+/* ===== PRINT-ONLY ===== */
+@media print{
+  .sidebar,.topbar,.modal-overlay,.login-screen{display:none!important}
+  body,html{overflow:visible}
+  .content{padding:0}
+}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:768px){
+  .sidebar{position:fixed;left:-100%;transition:left .3s;z-index:100}
+  .sidebar.open{left:0}
+  .form-grid{grid-template-columns:1fr}
+}
+
+/* ===== QUICK-ACCESS CARDS ===== */
+.quick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:16px}
+.quick-card{
+  padding:16px;border-radius:var(--radius);background:var(--surface);
+  border:1px solid var(--border);cursor:pointer;transition:all .15s;
+  display:flex;flex-direction:column;gap:8px;
+}
+.quick-card:hover{background:var(--surf2);border-color:var(--border2);transform:translateY(-2px)}
+.quick-card .q-icon{font-size:24px}
+.quick-card .q-label{font-size:12px;font-weight:700;color:var(--text2)}
+
+/* ===== DETAIL SECTION ===== */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.detail-item{padding:10px 12px;background:var(--surface);border-radius:var(--radius-sm)}
+.detail-item .d-lbl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.detail-item .d-val{font-size:13px;font-weight:600;color:var(--text)}
+</style>
+</head>
+<body>
+
+<!-- ===================================================== LOGIN ===================================================== -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-header">
+      <div class="login-logo" style="padding:0;overflow:hidden">
+  <img src="logo_cabinet.jpg" style="width:100%;height:100%;object-fit:cover;border-radius:18px">
+</div>
+      <h2>Clinique Médicale Kpondehou</h2>
+      <p>LOT 825 GANKPODO-AKPAKPA-COTONOU-BÉNIN</p>
+    </div>
+    <div id="loginErr" style="display:none"></div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="lbl">Identifiant</label>
+      <input id="loginUser" class="form-control" type="text" placeholder="Nom d'utilisateur" value="DJOSSOU">
+    </div>
+    <div class="form-group" style="margin-bottom:20px">
+      <label class="lbl">Mot de passe</label>
+      <input id="loginPass" class="form-control" type="password" placeholder="••••••••">
+    </div>
+    <button class="btn btn-primary" id="loginBtn" style="width:100%;justify-content:center;padding:11px">
+      🔐 Se connecter
+    </button>
+    <p style="text-align:center;font-size:11px;color:var(--text3);margin-top:14px">
+      Programmeur : <strong style="color:var(--text2)">DCB</strong> · Ent: DCB Expertise : <strong style="color:var(--text2)"> Expertise  </strong>
+    </p>
+  </div>
+</div>
+
+<!-- ===================================================== APP ===================================================== -->
+<div id="app" style="display:none">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-head">
+      <div class="brand">
+      <div class="logo-box" style="padding:0;overflow:hidden">
+  <img src="logo_cabinet.jpg" style="width:100%;height:100%;object-fit:cover;border-radius:12px">
+</div>
+        <div class="brand-info">
+          <h1>CLINIQUE MÉDICALE KPONDEHOU</h1>
+          <p>Cotonou · Bénin</p>
+        </div>
+      </div>
+      <div class="clinic-meta">
+        IFU : 0202113100026 · Tél : 0147636375<br>
+        Autorisation : 096/MS/DS/SGM · 112GG21
+      </div>
+    </div>
+
+    <nav class="nav" id="nav">
+      <div class="nav-item active" data-view="dashboard"><span class="icon">🏠</span>Tableau de bord</div>
+      <div class="nav-item" data-view="patients"><span class="icon">🧾</span>Patients</div>
+      <div class="nav-item" data-view="appointments"><span class="icon">📅</span>Rendez-vous</div>
+      <div class="nav-item" data-view="consults"><span class="icon">🩺</span>Consultations</div>
+      <div class="nav-item" data-view="billing"><span class="icon">💳</span>Facturation</div>
+      <div class="nav-item" data-view="lab"><span class="icon">🔬</span>Laboratoire</div>
+      <div class="nav-item" id="navStaff" data-view="staff"><span class="icon">👩‍⚕️</span>Personnel</div>
+      <div class="nav-item" data-view="maternity"><span class="icon">🤱</span>Maternité</div>
+      <div class="nav-item" data-view="treasury"><span class="icon">🏦</span>Trésorerie</div>
+      <div class="nav-item" data-view="emergency"><span class="icon">🚑</span>Médicaments urgence</div>
+      <div class="nav-item" data-view="prices"><span class="icon">💼</span>Grille tarifaire</div>
+      <div class="nav-item" data-view="reports"><span class="icon">📊</span>Statistiques</div>
+      <div class="nav-item" id="navSettings" data-view="settings"><span class="icon">⚙️</span>Paramètres</div>
+    </nav>
+
+    <div class="sb-foot">
+      <div class="sb-user">
+        <div class="sb-avatar" id="sbAvatar">AD</div>
+        <div class="sb-user-info">
+          <div class="sb-user-name" id="sbName">Administrateur</div>
+          <div class="sb-user-role" id="sbRole">Admin</div>
+        </div>
+        <button class="logout-btn" id="logoutBtn" title="Déconnexion">⏻</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="search-box">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="globalSearch" placeholder="Rechercher patient, rendez-vous, consultation…" />
+      </div>
+      <div class="topbar-right">
+        <div class="top-badge"><span class="dot"></span>Système actif</div>
+        <div id="clock" class="top-badge"></div>
+        <div id="todayDate" class="top-badge" style="font-size:11px"></div>
+      </div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<!-- ===================================================== MODAL CONTAINER ===================================================== -->
+<div id="modalContainer"></div>
+
+<script>
+'use strict';
+// ================================================================
+//  DATA & PERSISTENCE
+// ================================================================
+const STORAGE_KEY = 'cmk_v3';
+const ROLES = ['Administrateur','Caissière','Personnel médical','Médecin','Personnalisé'];
+const DEFAULT = {
+  users:[
+    {username:'DJOSSOU',password:'admindjoss',name:'Dr. Djossou',role:'Administrateur'},
+    {username:'PERSONNEL',password:'personnel123',name:'Personnel Médical',role:'Personnel'}
+  ],
+  patients:[], appointments:[], consultations:[], staff:[],
+  lab:[], invoices:[], treasury:{balance:0,transactions:[]},
+  emergency_meds:[], price_list:[], maternity:[]
+};
+
+let S = loadState();
+let CU = null; // current user
+
+function loadState(){
+  try{const d=localStorage.getItem(STORAGE_KEY); if(d) return JSON.parse(d);}catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULT));
+}
+function save(){ localStorage.setItem(STORAGE_KEY,JSON.stringify(S)); }
+function nextId(col){ return col.length ? Math.max(...col.map(x=>x.id))+1 : 1; }
+const fmt = n => (n||0).toLocaleString('fr-FR')+' FCFA';
+const today = () => new Date().toISOString().slice(0,10);
+const now = () => new Date().toISOString().slice(0,16).replace('T',' ');
+function esc(str){ return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function age(dob){ if(!dob)return'-'; const d=new Date(dob); const y=new Date()-d; return Math.floor(y/31557600000)+' ans'; }
+
+// ================================================================
+//  CLOCK
+// ================================================================
+function tickClock(){
+  const n=new Date();
+  const H=String(n.getHours()).padStart(2,'0');
+  const M=String(n.getMinutes()).padStart(2,'0');
+  const Sec=String(n.getSeconds()).padStart(2,'0');
+  const clk=document.getElementById('clock');
+  const dtEl=document.getElementById('todayDate');
+  if(clk) clk.textContent=`${H}:${M}:${Sec}`;
+  if(dtEl) dtEl.textContent=n.toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+}
+setInterval(tickClock,1000); tickClock();
+
+// ================================================================
+//  TOAST
+// ================================================================
+function toast(msg, type='info', dur=3500){
+  const t=document.createElement('div');
+  const colors={info:'rgba(59,130,246,.9)',ok:'rgba(16,185,129,.9)',err:'rgba(239,68,68,.9)',warn:'rgba(245,158,11,.9)'};
+  t.style.cssText=`position:fixed;top:20px;right:20px;z-index:99999;background:${colors[type]||colors.info};color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:600;font-family:inherit;box-shadow:0 8px 32px rgba(0,0,0,.4);max-width:320px;line-height:1.4;animation:fadeIn .2s ease`;
+  t.textContent=msg; document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300)},dur);
+}
+
+// ================================================================
+//  MODAL
+// ================================================================
+function openModal(html, cls=''){
+  closeModal();
+  const ov=document.createElement('div');
+  ov.className='modal-overlay'; ov.id='_modal';
+  ov.innerHTML=`<div class="modal ${cls}">${html}</div>`;
+  ov.addEventListener('click',e=>{if(e.target===ov)closeModal();});
+  document.body.appendChild(ov);
+}
+function closeModal(){ const m=document.getElementById('_modal'); if(m)m.remove(); }
+function mHd(title){return `<div class="modal-hd"><h3 class="modal-title">${title}</h3><button class="modal-close" onclick="closeModal()">✕</button></div>`;}
+function mFt(okLabel, okFn, cancelLabel='Annuler'){return `<div class="modal-ft"><button class="btn btn-ghost btn-sm" onclick="closeModal()">${cancelLabel}</button><button class="btn btn-primary btn-sm" onclick="${okFn}">${okLabel}</button></div>`;}
+
+// ================================================================
+//  AUTH
+// ================================================================
+document.getElementById('loginBtn').addEventListener('click', doLogin);
+document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('logoutBtn').addEventListener('click', ()=>{
+  if(confirm('Se déconnecter ?')){ CU=null; document.getElementById('app').style.display='none'; document.getElementById('loginScreen').style.display='grid'; }
+});
+
+function doLogin(){
+  const u=document.getElementById('loginUser').value.trim();
+  const p=document.getElementById('loginPass').value;
+  const user=S.users.find(x=>x.username===u && x.password===p);
+  const errEl=document.getElementById('loginErr');
+  if(!user){
+    errEl.style.display='block';
+    errEl.innerHTML=`<div class="alert alert-err">❌ Identifiants incorrects</div>`;
+    return;
+  }
+  errEl.style.display='none';
+  CU=user; afterLogin();
+}
+
+function afterLogin(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('sbName').textContent=CU.name||CU.username;
+  document.getElementById('sbRole').textContent=CU.role||'Utilisateur';
+  document.getElementById('sbAvatar').textContent=(CU.name||CU.username).slice(0,2).toUpperCase();
+  // Masquer menus selon rôle
+  const restricted=['navSettings','navStaff'];
+  restricted.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display=isAdmin()?'':'none';
+  });
+  showView('dashboard');
+}
+
+const isAdmin=()=>CU&&(CU.username.toUpperCase()==='DJOSSOU'||CU.role==='Administrateur');
+const isCaissiere=()=>CU&&CU.role==='Caissière';
+const isPersonnelMedical=()=>CU&&CU.role==='Personnel médical';
+const isMedecin=()=>CU&&CU.role==='Médecin';
+
+// ================================================================
+//  NAV
+// ================================================================
+document.getElementById('nav').addEventListener('click', e=>{
+  const item=e.target.closest('.nav-item');
+  if(!item||!item.dataset.view) return;
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  item.classList.add('active');
+  showView(item.dataset.view);
+});
+
+function showView(name){
+  const c=document.getElementById('content');
+  c.innerHTML=`<div class="view" id="view-${name}"></div>`;
+  const vEl=document.getElementById(`view-${name}`);
+  const views={
+    dashboard:renderDashboard, patients:renderPatients, appointments:renderAppointments,
+    consults:renderConsults, billing:renderBilling, lab:renderLab, staff:renderStaff,
+    maternity:renderMaternity, treasury:renderTreasury, emergency:renderEmergency,
+    prices:renderPrices, reports:renderReports, settings:renderSettings
+  };
+  if(views[name]) views[name](vEl);
+  else vEl.innerHTML=`<div class="card">Vue non trouvée</div>`;
+  // update nav highlight
+  document.querySelectorAll('.nav-item').forEach(b=>{ b.classList.toggle('active',b.dataset.view===name); });
+}
+
+// ================================================================
+//  DASHBOARD
+// ================================================================
+function renderDashboard(el){
+  const todayRDV=S.appointments.filter(a=>a.date===today()).length;
+  const unpaidInv=S.invoices.filter(i=>!i.paid).length;
+  const activeStaff=S.staff.length;
+  const pendingLab=S.lab.filter(l=>!l.result||l.result==='').length;
+
+  el.innerHTML=`
+    <div class="section-hd">
+      <div class="section-title">Tableau de bord <small>Vue d'ensemble · ${today()}</small></div>
+      <div class="section-actions">
+        <button class="btn btn-primary btn-sm" onclick="showView('patients');setTimeout(openNewPatient,200)">+ Nouveau patient</button>
+        <button class="btn btn-ghost btn-sm" onclick="showView('appointments');setTimeout(openNewAppointment,200)">+ Rendez-vous</button>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card blue">
+        <div class="stat-icon blue">🧾</div>
+        <div class="stat-val">${S.patients.length}</div>
+        <div class="stat-lbl">Patients enregistrés</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-icon amber">📅</div>
+        <div class="stat-val">${todayRDV}</div>
+        <div class="stat-lbl">RDV aujourd'hui</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon green">💰</div>
+        <div class="stat-val">${(S.treasury.balance/1000).toFixed(0)}k</div>
+        <div class="stat-lbl">Solde (FCFA)</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-icon red">💳</div>
+        <div class="stat-val">${unpaidInv}</div>
+        <div class="stat-lbl">Factures impayées</div>
+      </div>
+      <div class="stat-card violet">
+        <div class="stat-icon violet">👩‍⚕️</div>
+        <div class="stat-val">${activeStaff}</div>
+        <div class="stat-lbl">Personnel médical</div>
+      </div>
+      <div class="stat-card cyan">
+        <div class="stat-icon cyan">🔬</div>
+        <div class="stat-val">${pendingLab}</div>
+        <div class="stat-lbl">Analyses en attente</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card">
+        <div style="font-size:14px;font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:6px">
+          📅 Prochains rendez-vous
+          <span class="badge badge-blue" style="margin-left:auto">${S.appointments.length}</span>
+        </div>
+        ${S.appointments.length ? `
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Patient</th><th>Date</th><th>Heure</th><th>Praticien</th></tr></thead>
+            <tbody>
+              ${S.appointments.slice(0,6).map(a=>{
+                const p=S.patients.find(x=>x.id===a.patientId)||{prenom:'Inconnu',nom:''};
+                return `<tr>
+                  <td><div class="patient-row"><div class="patient-avatar">${p.prenom.slice(0,2).toUpperCase()}</div>${esc(p.prenom)} ${esc(p.nom)}</div></td>
+                  <td><span class="badge ${a.date===today()?'badge-green':'badge-gray'}">${a.date}</span></td>
+                  <td>${a.time||'—'}</td>
+                  <td>${esc(a.praticien)||'—'}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>` : `<div class="empty"><div class="empty-icon">📅</div><p class="empty-text">Aucun rendez-vous planifié</p></div>`}
+      </div>
+
+      <div class="card">
+        <div style="font-size:14px;font-weight:800;margin-bottom:12px">⚡ Accès rapide</div>
+        <div class="quick-grid">
+          <div class="quick-card" onclick="showView('patients');setTimeout(openNewPatient,200)"><div class="q-icon">🧾</div><div class="q-label">Nouveau patient</div></div>
+          <div class="quick-card" onclick="showView('appointments');setTimeout(openNewAppointment,200)"><div class="q-icon">📅</div><div class="q-label">Nouveau RDV</div></div>
+          <div class="quick-card" onclick="showView('consults');setTimeout(openNewConsult,200)"><div class="q-icon">🩺</div><div class="q-label">Consultation</div></div>
+          <div class="quick-card" onclick="showView('lab');setTimeout(openNewLab,200)"><div class="q-icon">🔬</div><div class="q-label">Labo</div></div>
+          <div class="quick-card" onclick="showView('billing')"><div class="q-icon">💳</div><div class="q-label">Facturation</div></div>
+          <div class="quick-card" onclick="showView('treasury')"><div class="q-icon">🏦</div><div class="q-label">Trésorerie</div></div>
+        </div>
+
+        ${unpaidInv > 0 ? `<div class="alert alert-warn" style="margin-top:12px">⚠️ ${unpaidInv} facture(s) impayée(s) en attente</div>` : ''}
+        ${pendingLab > 0 ? `<div class="alert alert-info" style="margin-top:8px">🔬 ${pendingLab} analyse(s) sans résultat</div>` : ''}
+      </div>
+    </div>
+
+    ${S.consultations.length > 0 ? `
+    <div class="card" style="margin-top:16px">
+      <div style="font-size:14px;font-weight:800;margin-bottom:12px">🩺 Consultations récentes</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Patient</th><th>Date</th><th>Diagnostic</th><th>Médecin</th><th></th></tr></thead>
+          <tbody>
+            ${S.consultations.slice(-5).reverse().map(c=>{
+              const p=S.patients.find(x=>x.id===c.patientId)||{prenom:'Inconnu',nom:''};
+              return `<tr>
+                <td>${esc(p.prenom)} ${esc(p.nom)}</td>
+                <td>${c.date||'—'}</td>
+                <td>${esc(c.diagnosis||'-')}</td>
+                <td>${esc(c.doctor||'-')}</td>
+                <td><div class="td-actions"><button class="btn btn-ghost btn-sm btn-icon" onclick="viewConsult(${c.id})" title="Voir">👁</button></div></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>` : ''}
+  `;
+}
+
+// ================================================================
+//  PATIENTS
+// ================================================================
+function renderPatients(el){
+  el.innerHTML=`
+    <div class="section-hd">
+      <div class="section-title">Gestion des patients <small>${S.patients.length} enregistrés</small></div>
+      <div class="section-actions">
+        <button class="btn btn-primary btn-sm" onclick="openNewPatient()">+ Ajouter patient</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportPatientsCSV()">⬇ CSV</button>
+      </div>
+    </div>
+
+    ${S.patients.length ? `
+    <div class="card">
+      <div style="margin-bottom:12px">
+        <input class="form-control" placeholder="🔍 Filtrer les patients…" oninput="filterPatients(this.value)" style="max-width:300px">
+      </div>
+      <div class="table-wrap">
+        <table id="patientTable">
+          <thead>
+            <tr>
+              <th>Patient</th><th>Naissance · Âge</th><th>Sexe</th><th>Téléphone</th>
+              <th>Assurance</th><th>Groupe sg.</th><th>Grossesse</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${S.patients.map(p=>`
+            <tr data-pid="${p.id}">
+              <td><div class="patient-row">
+                <div class="patient-avatar">${p.prenom.slice(0,2).toUpperCase()}</div>
+                <div><div style="font-weight:600">${esc(p.prenom)} ${esc(p.nom)}</div>
+                <div style="font-size:11px;color:var(--text3)">ID #${p.id}</div></div>
+              </div></td>
+              <td>${p.dob||'—'} <span class="badge badge-gray" style="font-size:10px">${age(p.dob)}</span></td>
+              <td><span class="badge ${p.sexe==='F'?'badge-violet':'badge-blue'}">${p.sexe||'—'}</span></td>
+              <td>${esc(p.tel)||'—'}</td>
+              <td>${esc(p.insurance)||'<span style="color:var(--text3)">—</span>'}</td>
+              <td>${p.blood?`<span class="badge badge-red">${esc(p.blood)}</span>`:'—'}</td>
+              <td>${p.pregnancy_weeks?`<span class="badge badge-amber">${esc(p.pregnancy_weeks)} SA</span>`:'—'}</td>
+              <td><div class="td-actions">
+                <button class="btn btn-ghost btn-sm btn-icon" onclick="viewPatient(${p.id})" title="Voir dossier">👁</button>
+                <button class="btn btn-ghost btn-sm btn-icon" onclick="editPatient(${p.id})" title="Modifier">✏️</button>
+                <button class="btn btn-danger btn-sm btn-icon" onclick="deletePatient(${p.id})" title="Supprimer">🗑</button>
+              </div></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>` : `
+    <div class="empty">
+      <div class="empty-icon">🧾</div>
+      <p class="empty-text">Aucun patient enregistré. Commencez par ajouter un patient.</p>
+      <button class="btn btn-primary" style="margin-top:14px" onclick="openNewPatient()">+ Ajouter le premier patient</button>
+    </div>`}
+  `;
+}
+window.filterPatients=function(q){
+  document.querySelectorAll('#patientTable tbody tr').forEach(tr=>{
+    tr.style.display=tr.textContent.toLowerCase().includes(q.toLowerCase())?'':'none';
+  });
+};
+
+function openNewPatient(){
+  openModal(`
+    ${mHd('➕ Nouveau patient')}
+    <div class="form-grid">
+      <div class="form-group"><label class="lbl">Prénom *</label><input id="f_prenom" class="form-control" placeholder="Prénom"></div>
+      <div class="form-group"><label class="lbl">Nom *</label><input id="f_nom" class="form-control" placeholder="Nom de famille"></div>
+      <div class="form-group"><label class="lbl">Date de naissance</label><input id="f_dob" class="form-control" type="date"></div>
+      <div class="form-group"><label class="lbl">Sexe</label><select id="f_sexe" class="form-control"><option value="F">Féminin</option><option value="M">Masculin</option></select></div>
+      <div class="form-group"><label class="lbl">Téléphone</label><input id="f_tel" class="form-control" placeholder="+229 XX XXX XXX"></div>
+      <div class="form-group"><label class="lbl">Adresse</label><input id="f_addr" class="form-control" placeholder="Quartier, ville"></div>
+      <div class="form-group"><label class="lbl">Assurance</label><input id="f_insurance" class="form-control" placeholder="AXA, CNSS…"></div>
+      <div class="form-group"><label class="lbl">Groupe sanguin</label><select id="f_blood" class="form-control"><option value="">—</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select></div>
+      <div class="form-group"><label class="lbl">Poids (kg)</label><input id="f_weight" class="form-control" placeholder="68"></div>
+      <div class="form-group"><label class="lbl">Taille (cm)</label><input id="f_height" class="form-control" placeholder="165"></div>
+      <div class="form-group full"><label class="lbl">Semaines de grossesse (SA)</label><input id="f_pregweeks" class="form-control" placeholder="Ex: 28 (si applicable)"></div>
+      <div class="form-group full"><label class="lbl">Antécédents / Allergies / Maladies chroniques</label><textarea id="f_notes" class="form-control" placeholder="Antécédents médicaux, allergies connues, maladies chroniques…"></textarea></div>
+    </div>
+    ${mFt('💾 Enregistrer','saveNewPatient()')}
+  `);
+}
+window.saveNewPatient=function(){
+  const prenom=document.getElementById('f_prenom').value.trim();
+  const nom=document.getElementById('f_nom').value.trim();
+  if(!prenom||!nom){ toast('Prénom et Nom sont requis','err'); return; }
+  S.patients.push({
+    id:nextId(S.patients), prenom, nom,
+    dob:document.getElementById('f_dob').value||'',
+    sexe:document.getElementById('f_sexe').value||'',
+    tel:document.getElementById('f_tel').value||'',
+    addr:document.getElementById('f_addr').value||'',
+    insurance:document.getElementById('f_insurance').value||'',
+    blood:document.getElementById('f_blood').value||'',
+    weight:document.getElementById('f_weight').value||'',
+    height:document.getElementById('f_height').value||'',
+    pregnancy_weeks:document.getElementById('f_pregweeks').value||'',
+    notes:document.getElementById('f_notes').value||'',
+    createdAt:today()
+  });
+  save(); closeModal(); showView('patients'); toast('Patient enregistré avec succès','ok');
+};
+
+window.viewPatient=function(id){
+  const p=S.patients.find(x=>x.id===id); if(!p) return;
+  const pConsults=S.consultations.filter(c=>c.patientId===id);
+  const pInvs=S.invoices.filter(i=>i.patientId===id);
+  openModal(`
+    ${mHd(`🧾 Dossier — ${esc(p.prenom)} ${esc(p.nom)}`)}
+    <div class="detail-grid">
+      <div class="detail-item"><div class="d-lbl">ID Patient</div><div class="d-val">#${p.id}</div></div>
+      <div class="detail-item"><div class="d-lbl">Nom complet</div><div class="d-val">${esc(p.prenom)} ${esc(p.nom)}</div></div>
+      <div class="detail-item"><div class="d-lbl">Date de naissance</div><div class="d-val">${p.dob||'—'} (${age(p.dob)})</div></div>
+      <div class="detail-item"><div class="d-lbl">Sexe</div><div class="d-val"><span class="badge ${p.sexe==='F'?'badge-violet':'badge-blue'}">${p.sexe||'—'}</span></div></div>
+      <div class="detail-item"><div class="d-lbl">Téléphone</div><div class="d-val">${esc(p.tel)||'—'}</div></div>
+      <div class="detail-item"><div class="d-lbl">Adresse</div><div class="d-val">${esc(p.addr)||'—'}</div></div>
+      <div class="detail-item"><div class="d-lbl">Assurance</div><div class="d-val">${esc(p.insurance)||'—'}</div></div>
+      <div class="detail-item"><div class="d-lbl">Groupe sanguin</div><div class="d-val">${p.blood?`<span class="badge badge-red">${esc(p.blood)}</span>`:'—'}</div></div>
+      <div class="detail-item"><div class="d-lbl">Poids / Taille</div><div class="d-val">${p.weight?p.weight+'kg':'—'} / ${p.height?p.height+'cm':'—'}</div></div>
+      <div class="detail-item"><div class="d-lbl">Grossesse</div><div class="d-val">${p.pregnancy_weeks?p.pregnancy_weeks+' SA':'—'}</div></div>
+      <div class="detail-item" style="grid-column:1/-1"><div class="d-lbl">Antécédents / Allergies</div><div class="d-val">${esc(p.notes)||'—'}</div></div>
+    </div>
+    <div class="divider"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <span class="badge badge-blue">📋 ${pConsults.length} consultation(s)</span>
+      <span class="badge badge-amber">💳 ${pInvs.length} facture(s)</span>
+      <span class="badge ${pInvs.filter(i=>!i.paid).length?'badge-red':'badge-green'}">${pInvs.filter(i=>!i.paid).length} impayée(s)</span>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">Fermer</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal();editPatient(${id})">✏️ Modifier</button>
+      <button class="btn btn-primary btn-sm" onclick="closeModal();showView('consults');setTimeout(openNewConsult,200)">🩺 Nouvelle consultation</button>
+      <button class="btn btn-success btn-sm" onclick="printPatientCard(${id})">🖨 Imprimer</button>
+    </div>
+  `);
+};
+
+window.editPatient=function(id){
+  const p=S.patients.find(x=>x.id===id); if(!p) return;
+  openModal(`
+    ${mHd(`✏️ Modifier — ${esc(p.prenom)} ${esc(p.nom)}`)}
+    <div class="form-grid">
+      <div class="form-group"><label class="lbl">Prénom</label><input id="f_prenom" class="form-control" value="${esc(p.prenom)}"></div>
+      <div class="form-group"><label class="lbl">Nom</label><input id="f_nom" class="form-control" value="${esc(p.nom)}"></div>
+      <div class="form-group"><label class="lbl">Date de naissance</label><input id="f_dob" class="form-control" type="date" value="${p.dob||''}"></div>
+      <div class="form-group"><label class="lbl">Sexe</label><select id="f_sexe" class="form-control"><option ${p.sexe==='F'?'selected':''} value="F">Féminin</option><option ${p.sexe==='M'?'selected':''} value="M">Masculin</option></select></div>
+      <div class="form-group"><label class="lbl">Téléphone</label><input id="f_tel" class="form-control" value="${esc(p.tel||'')}"></div>
+      <div class="form-group"><label class="lbl">Adresse</label><input id="f_addr" class="form-control" value="${esc(p.addr||'')}"></div>
+      <div class="form-group"><label class="lbl">Assurance</label><input id="f_insurance" class="form-control" value="${esc(p.insurance||'')}"></div>
+      <div class="form-group"><label class="lbl">Groupe sanguin</label><select id="f_blood" class="form-control"><option value="">—</option>${['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(b=>`<option ${p.blood===b?'selected':''}>${b}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="lbl">Poids (kg)</label><input id="f_weight" class="form-control" value="${esc(p.weight||'')}"></div>
+      <div class="form-group"><label class="lbl">Taille (cm)</label><input id="f_height" class="form-control" value="${esc(p.height||'')}"></div>
+      <div class="form-group full"><label class="lbl">Semaines de grossesse</label><input id="f_pregweeks" class="form-control" value="${esc(p.pregnancy_weeks||'')}"></div>
+      <div class="form-group full"><label class="lbl">Antécédents / Allergies</label><textarea id="f_notes" class="form-control">${esc(p.notes||'')}</textarea></div>
+    </div>
+    ${mFt('💾 Enregistrer', `saveEditedPatient(${id})`)}
+  `);
+};
+window.saveEditedPatient=function(id){
+  const p=S.patients.find(x=>x.id===id); if(!p) return;
+  p.prenom=document.getElementById('f_prenom').value;
+  p.nom=document.getElementById('f_nom').value;
+  p.dob=document.getElementById('f_dob').value;
+  p.sexe=document.getElementById('f_sexe').value;
+  p.tel=document.getElementById('f_tel').value;
+  p.addr=document.getElementById('f_addr').value;
+  p.insurance=document.getElementById('f_insurance').value;
+  p.blood=document.getElementById('f_blood').value;
+  p.weight=document.getElementById('f_weight').value;
+  p.height=document.getElementById('f_height').value;
+  p.pregnancy_weeks=document.getElementById('f_pregweeks').value;
+  p.notes=document.getElementById('f_notes').value;
+  save(); closeModal(); showView('patients'); toast('Patient mis à jour','ok');
+};
+window.deletePatient=function(id){
+  if(!confirm('Supprimer ce patient et toutes ses données associées ?')) return;
+  S.patients=S.patients.filter(x=>x.id!==id);
+  S.consultations=S.consultations.filter(x=>x.patientId!==id);
+  S.appointments=S.appointments.filter(x=>x.patientId!==id);
+  S.invoices=S.invoices.filter(x=>x.patientId!==id);
+  save(); showView('patients'); toast('Patient supprimé','warn');
+};
+
+function exportPatientsCSV(){
+  if(!S.patients.length){ toast('Aucun patient à exporter','warn'); return; }
+  const header=['id','prenom','nom','dob','sexe','tel','addr','insurance','blood','weight','height','pregnancy_weeks','notes','createdAt'];
+  const rows=S.patients.map(p=>header.map(h=>`"${(p[h]||'').toString().replace(/"/g,'""')}"`).join(','));
+  const csv=[header.join(','),...rows].join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download='patients_kpondehou_'+today()+'.csv';
+  a.click();
+  toast('Export CSV généré','ok');
+}
+
+window.printPatientCard=function(id){
+  const p=S.patients.find(x=>x.id===id); if(!p) return;
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>Fiche patient — ${p.prenom} ${p.nom}</title>
+  <style>body{font-family:Arial,sans-serif;padding:20px;font-size:13px}
+  h1{font-size:16px;margin-bottom:4px}h2{font-size:14px;color:#555}
+  table{width:100%;border-collapse:collapse;margin-top:12px}
+  td{padding:6px 10px;border:1px solid #ccc}
+  .lbl{font-weight:bold;background:#f5f5f5;width:35%}
+  .header{text-align:center;border-bottom:2px solid #333;padding-bottom:12px;margin-bottom:12px}
+  </style></head><body>
+  <div class="header">
+    <h1>CLINIQUE MÉDICALE KPONDEHOU</h1>
+    <p>LOT 825 GANKPODO-AKPAKPA-COTONOU-BÉNIN — Tél: 0147636375</p>
+    <h2>FICHE PATIENT #${p.id}</h2>
+  </div>
+  <table>
+    <tr><td class="lbl">Nom complet</td><td>${p.prenom} ${p.nom}</td></tr>
+    <tr><td class="lbl">Date de naissance</td><td>${p.dob||'—'} (${age(p.dob)})</td></tr>
+    <tr><td class="lbl">Sexe</td><td>${p.sexe||'—'}</td></tr>
+    <tr><td class="lbl">Téléphone</td><td>${p.tel||'—'}</td></tr>
+    <tr><td class="lbl">Adresse</td><td>${p.addr||'—'}</td></tr>
+    <tr><td class="lbl">Assurance</td><td>${p.insurance||'—'}</td></tr>
+    <tr><td class="lbl">Groupe sanguin</td><td>${p.blood||'—'}</td></tr>
+    <tr><td class="lbl">Poids / Taille</td><td>${p.weight?p.weight+'kg':'—'} / ${p.height?p.height+'cm':'—'}</td></tr>
+    <tr><td class="lbl">Grossesse</td><td>${p.pregnancy_weeks?p.pregnancy_weeks+' SA':'—'}</td></tr>
+    <tr><td class="lbl">Antécédents</td><td>${p.notes||'—'}</td></tr>
+  </table>
+  <p style="text-align:right;font-size:11px;margin-top:16px;color:#888">Imprimé le ${new Date().toLocaleDateString('fr-FR')} — Clinique Kpondehou</p>
+  </body></html>`);
+  w.document.close();
+  w.print();
+};
+
+// ================================================================
+//  APPOINTMENTS
+// ================================================================
+function renderAppointments(el){
+  const sortedApts=[...S.appointments].sort((a,b)=>new Date(a.date+' '+a.time)-new Date(b.date+' '+b.time));
+  el.innerHTML=`
+    <div class="section-hd">
+      <div class="section-title">Rendez-vous <small>${S.appointments.length} au total</small></div>
+      <div class="section-actions">
+        <button class="btn btn-primary btn-sm" onclick="openNewAppointment()">+ Nouveau RDV</button>
+        ${S.appointments.length?`<button class="btn btn-danger btn-sm" onclick="if(confirm('Supprimer TOUS les RDV ?')){S.appointments=[];save();showView('appointments');}">🗑 Tout effacer</button>`:''}
+      </div>
+    </div>
+    ${sortedApts.length ? `
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Patient</th><th>Date</th><th>Heure</th><th>Motif</th><th>Praticien</th><th>Statut</th><th>Actions</th></tr></thead>
+          <tbody>
+            ${sortedApts.map(a=>{
+              const p=S.patients.find(x=>x.id===a.patientId)||{prenom:'?',nom:''};
+              const isPast=new Date(a.date)<new Date(today());
+              const isToday=a.date===today();
+              return `<tr>
+                <td><span style="font-family:monospace;font-size:12px;color:var(--text3)">#${a.id}</span></td>
+                <td><div class="patient-row"><div class="patient-avatar">${p.prenom.slice(0,2).toUpperCase()}</div>${esc(p.prenom)} ${esc(p.nom)}</div></td>
+                <td>${a.date}</td>
+                <td><span style="font-family:monospace">${a.time||'—'}</span></td>
+                <td>${esc(a.motif)||'—'}</td>
+                <td>${esc(a.praticien)||'—'}</td>
+                <td>${isToday?'<span class="badge badge-green">Aujourd\'hui</span>':isPast?'<span class="badge badge-gray">Passé</span>':'<span class="badge badge-blue">À venir</span>'}</td>
+                <td><div class="td-actions">
+                  <button class="btn btn-ghost btn-sm btn-icon" onclick="editAppointment(${a.id})" title="Modifier">✏️</button>
+                  <button class="btn btn-danger btn-sm btn-icon" onclick="deleteAppointment(${a.id})" title="Supprimer">🗑</button>
+                </div></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>` : `
+    <div class="empty"><div class="empty-icon">📅</div><p class="empty-text">Aucun rendez-vous planifié</p>
+    <button class="btn btn-primary" style="margin-top:14px" onclick="openNewAppointment()">+ Planifier le premier RDV</button></div>`}
+  `;
+}
+window.openNewAppointment=function(){
+  if(!S.patients.length){ toast("Ajoutez d'abord un patient",'warn'); return; }
+  const opts=S.patients.map(p=>`<option value="${p.id}">${esc(p.prenom)} ${esc(p.nom)}</option>`).join('');
+  const staffOpts=['',...S.staff.map(s=>s.name)].map(n=>`<option value="${n}">${n||'— sélectionner —'}</option>`).join('');
+  openModal(`
+    ${mHd('📅 Nouveau rendez-vous')}
+    <div class="form-grid">
+      <div class="form-group full"><label class="lbl">Patient *</label><select id="f_patient" class="form-control">${opts}</select></div>
+      <div class="form-group"><label class="lbl">Date *</label><input id="f_date" class="form-control" type="date" value="${today()}"></div>
+      <div class="form-group"><label class="lbl">Heure *</label><input id="f_time" class="form-control" type="time"></div>
+      <div class="form-group full"><label class="lbl">Motif</label><input id="f_motif" class="form-control" placeholder="Consultation prénatale, suivi…"></div>
+      <div class="form-group full"><label class="lbl">Praticien</label><input id="f_praticien" class="form-control" list="staff-list" placeholder="Nom du médecin">
+        <datalist id="staff-list">${S.staff.map(s=>`<option value="${esc(s.name)}">`).join('')}</datalist>
+      </div>
+      <div class="form-group full"><label class="lbl">Notes</label><textarea id="f_notes" class="form-control" placeholder="Observations supplémentaires…"></textarea></div>
+    </div>
+    ${mFt('💾 Enregistrer','saveNewAppointment()')}
+  `);
+};
+window.saveNewAppointment=function(){
+  const patientId=parseInt(document.getElementById('f_patient').value);
+  const date=document.getElementById('f_date').value;
+  const time=document.getElementById('f_time').value;
+  if(!patientId||!date||!time){ toast('Patient, date et heure requis','err'); return; }
+  S.appointments.push({id:nextId(S.appointments),patientId,date,time,motif:document.getElementById('f_motif').value||'',praticien:document.getElementById('f_praticien').value||'',notes:document.getElementById('f_notes').value||''});
+  save(); closeModal(); showView('appointments'); toast('Rendez-vous planifié','ok');
+};
+window.editAppointment=function(id){
+  const a=S.appointments.find(x=>x.id===id); if(!a) return;
+  const opts=S.patients.map(p=>`<option value="${p.id}" ${p.id===a.patientId?'selected':''}>${esc(p.prenom)} ${esc(p.nom)}</option>`).join('');
+  openModal(`
+    ${mHd('✏️ Modifier rendez-vous')}
+    <div class="form-grid">
+      <div class="form-group full"><label class="lbl">Patient</label><select id="f_patient" class="form-control">${opts}</select></div>
+      <div class="form-group"><label class="lbl">Date</label><input id="f_date" class="form-control" type="date" value="${a.date}"></div>
+      <div class="form-group"><label class="lbl">Heure</label><input id="f_time" class="form-control" type="time" value="${a.time||''}"></div>
+      <div class="form-group full"><label class="lbl">Motif</label><input id="f_motif" class="form-control" value="${esc(a.motif||'')}"></div>
+      <div class="form-group full"><label class="lbl">Praticien</label><input id="f_praticien" class="form-control" value="${esc(a.praticien||'')}"></div>
+      <div class="form-group full"><label class="lbl">Notes</label><textarea id="f_notes" class="form-control">${esc(a.notes||'')}</textarea></div>
+    </div>
+    ${mFt('💾 Enregistrer',`saveEditedAppointment(${id})`)}
+  `);
+};
+window.saveEditedAppointment=function(id){
+  const a=S.appointments.find(x=>x.id===id); if(!a) return;
+  a.patientId=parseInt(document.getElementById('f_patient').value);
+  a.date=document.getElementById('f_date').value;
+  a.time=document.getElementById('f_time').value;
+  a.motif=document.getElementById('f_motif').value;
+  a.praticien=document.getElementById('f_praticien').value;
+  a.notes=document.getElementById('f_notes').value;
+  save(); closeModal(); showView('appointments'); toast('RDV mis à jour','ok');
+};
+window.deleteAppointment=function(id){
+  if(!confirm('Supprimer ce rendez-vous ?')) return;
+  S.appointments=S.appointments.filter(x=>x.id!==id);
+  save(); showView('appointments'); toast('RDV supprimé','warn');
+};
+
+// ================================================================
+//  CONSULTATIONS
+// ================================================================
+function renderConsults(el){
+  el.innerHTML=`
+    <div class="section-hd">
+      <div class="section-title">Consultations / Examens <small>${S.consultations.length}</small></div>
+      <div class="section-actions">
+        <button class="btn btn-primary btn-sm" onclick="openNewConsult()">+ Nouvelle consultation</button>
+      </div>
+    </div>
+    ${S.consultations.length ? `
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Patient</th><th>Date</th><th>Diagnostic</th><th>Médecin</th><th>Prescription</th><th>Actions</th></tr></thead>
+          <tbody>
+            ${[...S.consultations].reverse().map(c=>{
+              const p=S.patients.find(x=>x.id===c.patientId)||{prenom:'?',nom:''};
+              return `<tr>
+                <td><span style="font-family:monospace;color:var(--text3)">#${c.id}</span></td>
+                <td>${esc(p.prenom)} ${esc(p.nom)}</td>
+                <td>${c.date||'—'}</td>
+                <td>${esc(c.diagnosis||'—')}</td>
+                <td>${esc(c.doctor||'—')}</td>
+                <td>${c.prescription?'<span class="badge badge-green">✓ Oui</span>':'<span class="badge badge-gray">Non</span>'}</td>
+                <td><div class="td-actions">
+                  <button class="btn btn-ghost btn-sm btn-icon" onclick="viewConsult(${c.id})">👁</button>
+                  <button class="btn btn-danger btn-sm btn-icon" onclick="deleteConsult(${c.id})">🗑</button>
+                </div></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>` : `<div class="empty"><div class="empty-icon">🩺</div><p class="empty-text">Aucune consultation enregistrée</p><button class="btn btn-primary" style="margin-top:14px" onclick="openNewConsult()">+ Nouvelle consultation</button></div>`}
+  `;
+}
+window.openNewConsult=function(){
+  if(!S.patients.length){ toast("Ajoutez d'abord un patient",'warn'); return; }
+  const opts=S.patients.map(p=>`<option value="${p.id}">${esc(p.prenom)} ${esc(p.nom)}</option>`).join('');
+  openModal(`
+    ${mHd('🩺 Nouvelle consultation')}
+    <div class="form-grid">
+      <div class="form-group full"><label class="lbl">Patient *</label><select id="c_patient" class="form-control">${opts}</select></div>
+      <div class="form-group"><label class="lbl">Date</label><input id="c_date" class="form-control" type="date" value="${today()}"></div>
+      <div class="form-group"><label class="lbl">Médecin</label><input id="c_doctor" class="form-control" list="staff-list2" placeholder="Nom du médecin">
+        <datalist id="staff-list2">${S.staff.map(s=>`<option value="${esc(s.name)}">`).join('')}</datalist>
+      </div>
+      <div class="form-group full"><label class="lbl">Motif de la consultation</label><input id="c_motif" class="form-control" placeholder="Raison de la visite"></div>
+      <div class="form-group full"><label class="lbl">Signes vitaux (TA, FC, Temp., SpO2…)</label><input id="c_vitals" class="form-control" placeholder="Ex: TA 120/80 · FC 78 · T 37.2°C · SpO2 98%"></div>
+      <div class="form-group full"><label class="lbl">Diagnostic</label><textarea id="c_diagnosis" class="form-control" placeholder="Diagnostic principal et secondaire"></textarea></div>
+      <div class="form-group full"><label class="lbl">Traitement / Prescription</label><textarea id="c_prescription" class="form-control" placeholder="Médicaments, posologie, durée…"></textarea></div>
+      <div class="form-group full"><label class="lbl">Examens demandés</label><input id="c_exams" class="form-control" placeholder="NFS, Echographie, Glycémie…"></div>
+      <div class="form-group full"><label class="lbl">Notes / Observations</label><textarea id="c_notes" class="form-control" placeholder="Notes supplémentaires…"></textarea></div>
+      <div class="form-group full">
+        <label class="lbl">Créer une facture automatiquement</label>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="checkbox" id="c_invoice" style="accent-color:var(--blue)">
+          <span style="font-size:13px;color:var(--text2)">Oui, créer une facture</span>
+        </div>
+        <div id="c_invoice_section" style="display:none;margin-top:8px">
+          <div class="form-grid">
+            <div class="form-group"><label class="lbl">Montant (FCFA)</label><input id="c_inv_amount" class="form-control" type="number" placeholder="5000"></div>
+            <div class="form-group"><label class="lbl">Prestation</label>
+              <input id="c_inv_desc" class="form-control" list="price-list" placeholder="Consultation, Echographie…">
+              <datalist id="price-list">${S.price_list.map(pr=>`<option value="${esc(pr.name)}">${esc(pr.name)} — ${pr.price} FCFA</option>`).join('')}</datalist>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    ${mFt('💾 Enregistrer','saveNewConsult()')}
+    <script>document.getElementById('c_invoice').addEventListener('change',function(){document.getElementById('c_invoice_section').style.display=this.checked?'block':'none';});<\/script>
+  `);
+};
+window.saveNewConsult=function(){
+  const patientId=parseInt(document.getElementById('c_patient').value);
+  if(!patientId){ toast('Patient requis','err'); return; }
+  const c={
+    id:nextId(S.consultations), patientId,
+    date:document.getElementById('c_date').value||today(),
+    doctor:document.getElementById('c_doctor').value||'',
+    motif:document.getElementById('c_motif').value||'',
+    vitals:document.getElementById('c_vitals').value||'',
+    diagnosis:document.getElementById('c_diagnosis').value||'',
+    prescription:document.getElementById('c_prescription').value||'',
+    exams:document.getElementById('c_exams').value||'',
+    notes:document.getElementById('c_notes').value||''
+  };
+  S.consultations.push(c);
+  // Auto invoice
+  if(document.getElementById('c_invoice').checked){
+    const amount=parseFloat(document.getElementById('c_inv_amount').value||0);
+    if(amount>0){
+      S.invoices.push({id:nextId(S.invoices),patientId,consultationId:c.id,amount,description:document.getElementById('c_inv_desc').value||'Consultation',date:today(),paid:false});
+      toast('Facture créée automatiquement','ok');
+    }
+  }
+  save(); closeModal(); showView('consults'); toast('Consultation enregistrée','ok');
+};
+window.viewConsult=function(id){
+  const c=S.consultations.find(x=>x.id===id); if(!c) return;
+  const p=S.patients.find(x=>x.id===c.patientId)||{prenom:'Inconnu',nom:''};
+  openModal(`
+    ${mHd(`🩺 Consultation #${c.id} — ${esc(p.prenom)} ${esc(p.nom)}`)}
+    <div class="detail-grid">
+      <div class="detail-item"><div class="d-lbl">Patient</div><div class="d-val">${esc(p.prenom)} ${esc(p.nom)}</div></div>
+      <div class="detail-item"><div class="d-lbl">Date</div><div class="d-val">${c.date||'—'}</div></div>
+      <div class="detail-item"><div class="d-lbl">Médecin</div><div class="d-val">${esc(c.doctor||'—')}</div></div>
+      <div class="detail-item"><div class="d-lbl">Motif</div><div class="d-val">${esc(c.motif||'—')}</div></div>
+      ${c.vitals?`<div class="detail-item" style="grid-column:1/-1"><div class="d-lbl">Signes vitaux</div><div class="d-val" style="font-family:monospace">${esc(c.vitals)}</div></div>`:''}
+      ${c.diagnosis?`<div class="detail-item" style="grid-column:1/-1"><div class="d-lbl">Diagnostic</div><div class="d-val">${esc(c.diagnosis)}</div></div>`:''}
+      ${c.prescription?`<div class="detail-item" style="grid-column:1/-1"><div class="d-lbl">Prescription</div><div class="d-val" style="white-space:pre-wrap">${esc(c.prescription)}</div></div>`:''}
+      ${c.exams?`<div class="detail-item" style="grid-column:1/-1"><div class="d-lbl">Examens demandés</div><div class="d-val">${esc(c.exams)}</div></div>`:''}
+      ${c.notes?`<div class="detail-item" style="grid-column:1/-1"><div class="d-lbl">Notes</div><div class="d-val">${esc(c.notes)}</div></div>`:''}
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">Fermer</button>
+      <button class="btn btn-success btn-sm" onclick="printConsult(${id})">🖨 Imprimer</button>
+    </div>
+  `);
+};
+window.deleteConsult=function(id){
+  if(!confirm('Supprimer cette consultation ?')) return;
+  S.consultations=S.consultations.filter(x=>x.id!==id);
+  save(); showView('consults'); toast('Consultation supprimée','warn');
+};
+window.printConsult=function(id){
+  const c=S.consultations.find(x=>x.id===id); if(!c) return;
+  const p=S.patients.find(x=>x.id===c.patientId)||{prenom:'?',nom:''};
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>Consultation</title>
+  <style>body{font-family:Arial,sans-serif;padding:20px;font-size:13px}
+  .header{text-align:center;border-bottom:2px solid #333;padding-bottom:12px;margin-bottom:16px}
+  .section{margin-bottom:12px}.lbl{font-weight:bold;color:#333;font-size:11px;text-transform:uppercase;margin-bottom:4px}
+  .val{padding:8px;background:#f9f9f9;border-radius:4px;border-left:3px solid #3b82f6}
+  </style></head><body>
+  <div class="header"><h2>CLINIQUE MÉDICALE KPONDEHOU</h2><p>Cotonou · Bénin</p><h3>COMPTE RENDU DE CONSULTATION</h3></div>
+  <p><strong>Patient :</strong> ${p.prenom} ${p.nom} &nbsp;|&nbsp; <strong>Date :</strong> ${c.date} &nbsp;|&nbsp; <strong>Médecin :</strong> ${c.doctor||'—'}</p>
+  ${c.vitals?`<div class="section"><div class="lbl">Signes vitaux</div><div class="val">${c.vitals}</div></div>`:''}
+  ${c.motif?`<div class="section"><div class="lbl">Motif</div><div class="val">${c.motif}</div></div>`:''}
+  ${c.diagnosis?`<div class="section"><div class="lbl">Diagnostic</div><div class="val">${c.diagnosis}</div></div>`:''}
+  ${c.prescription?`<div class="section"><div class="lbl">Prescription</div><div class="val" style="white-space:pre-wrap">${c.prescription}</div></div>`:''}
+  ${c.exams?`<div class="section"><div class="lbl">Examens demandés</div><div class="val">${c.exams}</div></div>`:''}
+  ${c.notes?`<div class="section"><div class="lbl">Notes</div><div class="val">${c.notes}</div></div>`:''}
+  <p style="margin-top:40px">Signature du médecin : ___________________</p>
+  <p style="text-align:right;font-size:11px;color:#888">Imprimé le ${new Date().toLocaleDateString('fr-FR')}</p>
+  </body></html>`);
+  w.document.close(); w.print();
+};
+
+// ================================================================
+//  BILLING
+// ================================================================
+function renderBilling(el){
+  const total=S.invoices.reduce((s,i)=>s+(i.paid?parseFloat(i.amount||0):0),0);
+  const pending=S.invoices.filter(i=>!i.paid).reduce((s,i)=>s+parseFloat(i.amount||0),0);
+  el.innerHTML=`
+    <div class="section-hd">
+      <div class="section-title">Facturation <small>${S.invoices.length} factures</small></div>
+      <div class="section-actions">
+        <button class="btn btn-primary btn-sm" onclick="openNewInvoice()">+ Nouvelle facture</button>
+      </div>
+    </div>
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat-card green"><div class="stat-icon green">✅</div><div class="stat-val">${fmt(total)}</div><div class="stat-lbl">Encaissé</div></div>
+      <div class="stat-card red"><div class="stat-icon red">⏳</div><div class="stat-val">${fmt(pending)}</div><div class="stat-lbl">En attente</div></div>
+      <div class="stat-card blue"><div class="stat-icon blue">📋</div><div class="stat-val">${S.invoices.length}</div><div class="stat-lbl">Total factures</div></div>
+    </div>
+    ${S.invoices.length ? `
+    <div class="card">
+      <div class="filter-tabs" style="margin-bottom:12px">
+        <button class="filter-tab active" onclick="filterInvoices(this,'all')">Toutes</button>
+        <button class="filter-tab" onclick="filterInvoices(this,'unpaid')">Impayées</button>
+        <button class="filter-tab" onclick="filterInvoices(this,'paid')">Payées</button>
+      </div>
+      <div class="table-wrap">
+        <table id="invoiceTable">
+          <thead><tr><th>ID</th><th>Patient</th><th>Prestation</th><th>Montant</th><th>Date</th><th>Statut</th><th>Actions</th></tr></thead>
+          <tbody>
+            ${[...S.invoices].reverse().map(i=>{
+              const p=S.patients.find(x=>x.id===i.patientId)||{prenom:'?',nom:''};
+              return `<tr data-paid="${i.paid}">
+                <td><span style="font-family:monospace;color:var(--text3)">#${i.id}</span></td>
+                <td>${esc(p.prenom)} ${esc(p.nom)}</td>
+                <td>${esc(i.description||'—')}</td>
+                <td><strong>${fmt(i.amount)}</strong></td>
+                <td>${i.date||'—'}</td>
+                <td>${i.paid?'<span class="badge badge-green">✓ Payée</span>':'<span class="badge badge-red">⏳ Impayée</span>'}</td>
+                <td><div class="td-actions">
+                  ${!i.paid?`<button class="btn btn-success btn-sm" onclick="payInvoice(${i.id})">✓ Marquer payée</button>`:''}
+                  <button class="btn btn-ghost btn-sm btn-icon" onclick="printInvoice(${i.id})">🖨</button>
+                  <button class="btn btn-danger btn-sm btn-icon" onclick="deleteInvoice(${i.id})">🗑</button>
+                </div></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>` : `<div class="empty"><div class="empty-icon">💳</div><p class="empty-text">Aucune facture</p><button class="btn btn-primary" style="margin-top:14px" onclick="openNewInvoice()">+ Nouvelle facture</button></div>`}
+  `;
+}
+window.filterInvoices=function(btn, f){
+  btn.closest('.filter-tabs').querySelectorAll('.filter-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#invoiceTable tbody tr').forEach(tr=>{
+    const paid=tr.dataset.paid==='true';
+    tr.style.display=(f==='all'||(f==='paid'&&paid)||(f==='unpaid'&&!paid))?'':'none';
+  });
+};
+window.openNewInvoice=function(){
+  if(!S.patients.length){ toast("Ajoutez d'abord un patient",'warn'); return; }
+  const opts=S.patients.map(p=>`<option value="${p.id}">${esc(p.prenom)} ${esc(p.nom)}</option>`).join('');
+  openModal(`
+    ${mHd('💳 Nouvelle facture')}
+    <div class="form-grid">
+      <div class="form-group full"><label class="lbl">Patient *</label><select id="i_patient" class="form-control">${opts}</select></div>
+      <div class="form-group full">
+        <label class="lbl">Prestation *</label>
+        <input id="i_desc" class="form-control" list="price-list-inv" placeholder="Consultation, Echographie…">
+        <datalist id="price-list-inv">${S.price_list.map(pr=>`<option value="${esc(pr.name)}">${esc(pr.name)} — ${pr.price} FCFA</option>`).join('')}</datalist>
+      </div>
+      <div class="form-group"><label class="lbl">Montant (FCFA) *</label><input id="i_amount" class="form-control" type="number" placeholder="5000"></div>
+      <div class="form-group"><label class="lbl">Date</label><input id="i_date" class="form-control" type="date" value="${today()}"></div>
+      <div class="form-group full"><label class="lbl">Notes</label><textarea id="i_notes" class="form-control" placeholder="Remarques…"></textarea></div>
+    </div>
+    ${mFt('💾 Créer la facture','saveNewInvoice()')}
+  `);
+};
+window.saveNewInvoice=function(){
+  const patientId=parseInt(document.getElementById('i_patient').value);
+  const desc=document.getElementById('i_desc').value.trim();
+  const amount=parseFloat(document.getElementById('i_amount').value||0);
+  if(!patientId||!desc||!amount){ toast('Patient, prestation et montant requis','err'); return; }
+  S.invoices.push({id:nextId(S.invoices),patientId,description:desc,amount,date:document.getElementById('i_date').value||today(),notes:document.getElementById('i_notes').value||'',paid:false});
+  save(); closeModal(); showView('billing'); toast('Facture créée','ok');
+};
+window.payInvoice=function(id){
+  const inv=S.invoices.find(x=>x.id===id); if(!inv) return;
+  if(!confirm(`Marquer la facture #${id} de ${fmt(inv.amount)} comme payée ?`)) return;
+  inv.paid=true; inv.paidAt=today();
+  S.treasury.balance+=parseFloat(inv.amount||0);
+  S.treasury.transactions.push({id:nextId(S.treasury.transactions),type:'in',amount:inv.amount,date:today(),comment:`Paiement facture #${id} — ${inv.description||''}`});
+  save(); showView('billing'); toast(`Facture payée · ${fmt(inv.amount)} ajouté à la trésorerie`,'ok');
+};
+window.deleteInvoice=function(id){
+  if(!confirm('Supprimer cette facture ?')) return;
+  S.invoices=S.invoices.filter(x=>x.id!==id); save(); showView('billing'); toast('Facture supprimée','warn');
+};
+window.printInvoice=function(id){
+  const inv=S.invoices.find(x=>x.id===id); if(!inv) return;
+  const p=S.patients.find(x=>x.id===inv.patientId)||{prenom:'?',nom:''};
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>Facture #${inv.id}</title>
+  <style>body{font-family:Arial,sans-serif;padding:30px;font-size:13px;max-width:500px;margin:auto}
+  .header{text-align:center;border-bottom:2px solid #333;padding-bottom:14px;margin-bottom:20px}
+  table{width:100%;border-collapse:collapse;margin-top:16px}
+  td,th{padding:8px 10px;border:1px solid #ccc}th{background:#f0f0f0}
+  .total{font-size:16px;font-weight:bold;text-align:right;margin-top:12px;color:#1a1a1a}
+  .status{display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:bold;background:${inv.paid?'#d1fae5':'#fee2e2'};color:${inv.paid?'#065f46':'#991b1b'}}
+  </style></head><body>
+  <div class="header"><h2>CLINIQUE MÉDICALE KPONDEHOU</h2><p>LOT 825 GANKPODO-AKPAKPA-COTONOU-BÉNIN</p><p>Tel: 0147636375 · IFU: 0202113100026</p></div>
+  <p><strong>FACTURE N°</strong> ${inv.id} &nbsp;&nbsp; <strong>DATE :</strong> ${inv.date} &nbsp;&nbsp; <span class="status">${inv.paid?'PAYÉE':'EN ATTENTE'}</span></p>
+  <p style="margin-top:10px"><strong>Patiente / Patient :</strong> ${p.prenom} ${p.nom}</p>
+  <table><thead><tr><th>Prestation</th><th>Montant</th></tr></thead>
+  <tbody><tr><td>${inv.description||'—'}</td><td>${fmt(inv.amount)}</td></tr></tbody></table>
+  <div class="total">TOTAL : ${fmt(inv.amount)}</div>
+  <p style="margin-top:40px;font-size:11px;color:#888;text-align:center">Document imprimé le ${new Date().toLocaleDateString('fr-FR')}</p>
+  </body></html>`);
+  w.document.close(); w.print();
+};
+
+// ================================================================
+//  LAB
+// ================================================================
+function renderLab(el){
+  el.innerHTML=`
+    <div class="section-hd">
+      <div class="section-title">Laboratoire <small>${S.lab.length} demandes</small></div>
+      <div class="section-actions"><button class="btn btn-primary btn-sm" onclick="openNewLab()">+ Nouvelle demande</button></div>
+    </div>
+    ${S.lab.length ? `
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Patient</th><th>Examen demandé</th><th>Résultat</th><th>Date</th><th>Statut</th><th>Actions</th></tr></thead>
+          <tbody>
+            ${[...S.lab].reverse().map(l=>{
+              const p=S.patients.find(x=>x.id===l.patientId)||{prenom:'?',nom:''};
+              return `<tr>
+                <td><span style="font-family:monospace;color:var(--text3)">#${l.id}</span></td>
+                <td>${esc(p.prenom)} ${esc(p.nom)}</td>
+                <td>${esc(l.test||'—')}</td>
+                <td>${l.result?`<span style="font-size:12px">${esc(l.result.slice(0,40))}${l.result.length>40?'…':''}</span>`:'<span class="badge badge-amber">En attente</span>'}</td>
+                <td>${l.date||'—'}</td>
+                <td>${l.result?'<span class="badge badge-green">✓ Résultat</span>':'<span class="badge badge-amber">⏳ Attente</span>'}</td>
+                <td><div class="td-actions">
+                  <button class="btn btn-ghost btn-sm btn-icon" onclick="editLab(${l.id})" title="Saisir résultat">✏️</button>
+                  <button class="btn btn-ghost btn-sm btn-icon" onclick="viewLab(${l.id})" title="Voir">👁</button>
+                  <button class="btn btn-danger btn-sm btn-icon" onclick="deleteLab(${l.id})">🗑</button>
+                </div></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>` : `<div class="empty"><div class="empty-icon">🔬</div><p class="empty-text">Aucune demande de laboratoire</p><button class="btn btn-primary" style="margin-top:14px" onclick="openNewLab()">+ Nouvelle demande</button></div>`}
+  `;
+}
+window.openNewLab=function(){
+  if(!S.patients.length){ toast("Ajoutez d'abord un patient",'warn'); return; }
+  const opts=S.patients.map(p=>`<option value="${p.id}">${esc(p.prenom)} ${esc(p.nom)}</option>`).join('');
+  openModal(`
+    ${mHd('🔬 Nouvelle demande laboratoire')}
+    <div class="form-grid">
+      <div class="form-group full"><label class="lbl">Patient *</label><select id="l_patient" class="form-control">${opts}</select></div>
+      <div class="form-group full"><label class="lbl">Examen(s) demandé(s) *</label><input id="l_test" class="form-control" placeholder="NFS, Glycémie à jeun, Echographie pelv…"></div>
+      <div class="form-group"><label class="lbl">Date de demande</label><input id="l_date" class="form-control" type="date" value="${today()}"></div>
+      <div class="form-group"><label class="lbl">Médecin prescripteur</label><input id="l_doc" class="form-control" list="staff-list3" placeholder="Médecin">
+        <datalist id="staff-list3">${S.staff.map(s=>`<option value="${esc(s.name)}">`).join('')}</datalist>
+      </div>
+      <div class="form-group full"><label class="lbl">Commentaires</label><textarea id="l_comment" class="form-control" placeholder="Instructions particulières…"></textarea></div>
+    </div>
+    ${mFt('💾 Enregistrer','saveNewLab()')}
+  `);
+};
+window.saveNewLab=function(){
+  const patientId=parseInt(document.getElementById('l_patient').value);
+  const test=document.getElementById('l_test').value.trim();
+  if(!patientId||!test){ toast('Patient et examen requis','err'); return; }
+  S.lab.push({id:nextId(S.lab),patientId,test,date:document.getElementById('l_date').value||today(),doctor:document.getElementById('l_doc').value||'',comment:document.getElementById('l_comment').value||'',result:''});
+  save(); closeModal(); showView('lab'); toast('Demande enregistrée','ok');
+};
+window.editLab=function(id){
+  const l=S.lab.find(x=>x.id===id); if(!l) return;
+  openModal(`
+    ${mHd('🔬 Saisir résultat — '+esc(l.test))}
+    <div class="form-grid">
+      <div class="form-group full"><label class="lbl">Examen</label><input class="form-control" value="${esc(l.test)}" readonly style="opacity:.6"></div>
+      <div class="form-group full"><label class="lbl">Résultat *</label><textarea id="l_result" class="form-control" rows="5" placeholder="Résultat détaillé…">${esc(l.result||'')}</textarea></div>
+      <div class="form-group full"><label class="lbl">Interprétation / Conclusion</label><textarea id="l_interp" class="form-control" placeholder="Normal / Anormal, recommandations…">${esc(l.interp||'')}</textarea></div>
+    </div>
+    ${mFt('💾 Enregistrer',`saveEditedLab(${id})`)}
+  `);
+};
+window.saveEditedLab=function(id){
+  const l=S.lab.find(x=>x.id===id); if(!l) return;
+  l.result=document.getElementById('l_result').value;
+  l.interp=document.getElementById('l_interp').value;
+  l.resultDate=today();
+  save(); closeModal(); showView('lab'); toast('Résultat enregistré','ok');
+};
+window.viewLab=function(id){
+  const l=S.lab.find(x=>x.id===id); if(!l) return;
+  const p=S.patients.find(x=>x.id===l.patientId)||{prenom:'?',nom:''};
+  openModal(`
+    ${mHd('🔬 Résultat — '+esc(l.test))}
+    <div class="detail-grid">
+      <div class="detail-item"><div class="d-lbl">Patient</div><div class="d-val">${esc(p.prenom)} ${esc(p.nom)}</div></div>
+      <div class="detail-item"><div class="d-lbl">Demandé le</div><div class="d-val">${l.date||'—'}</div></div>
+      <div class="detail-item"><div class="d-lbl">Médecin</div><div class="d-val">${esc(l.doctor||'—')}</div></div>
+      <div class="detail-item"><div class="d-lbl">Résultat le</div><div class="d-val">${l.resultDate||'—'}</div></div>
+      ${l.comment?`<div class="detail-item" style="grid-column:1/-1"><div class="d-lbl">Commentaires</div><div class="d-val">${esc(l.comment)}</div></div>`:''}
+      ${l.result?`<div class="detail-item" style="grid-column:1/-1"><div class="d-lbl">Résultat</div><div class="d-val" style="white-space:pre-wrap">${esc(l.result)}</div></div>`:'<div class="detail-item" style="grid-column:1/-1"><span class="badge badge-amber">⏳ Pas encore de résultat</span></div>'}
+      ${l.interp?`<div class="detail-item" style="grid-column:1/-1"><div class="d-lbl">Interprétation</div><div class="d-val">${esc(l.interp)}</div></div>`:''}
+    </div>
+    <div class="modal-ft"><button class="btn btn-ghost btn-sm" onclick="closeModal()">Fermer</button></div>
+  `);
+};
+window.deleteLab=function(id){
+  if(!confirm('Supprimer cette demande ?')) return;
+  S.lab=S.lab.filter(x=>x.id!==id); save(); showView('lab'); toast('Demande supprimée','warn');
+};
+
+// ================================================================
+//  STAFF
+// ================================================================
+function renderStaff(el){
+  el.innerHTML=`
+    <div class="section-hd">
+      <div class="section-title">Personnel médical <small>${S.staff.length} membres</small></div>
+      <div class="section-actions"><button class="btn btn-primary btn-sm" onclick="openNewStaff()">+ Ajouter membre</button></div>
+    </div>
+    ${S.staff.length ? `
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Nom</th><th>Rôle / Spécialité</th><th>Téléphone</th><th>Email</th><th>Actions</th></tr></thead>
+          <tbody>
+            ${S.staff.map(s=>`<tr>
+              <td>#${s.id}</td>
+              <td><strong>${esc(s.name)}</strong></td>
+              <td><span class="badge badge-blue">${esc(s.role||'—')}</span></td>
+              <td>${esc(s.tel||'—')}</td>
+              <td>${esc(s.email||'—')}</td>
+              <td><div class="td-actions">
+                <button class="btn btn-ghost btn-sm btn-icon" onclick="editStaff(${s.id})">✏️</button>
+                <button class="btn btn-danger btn-sm btn-icon" onclick="deleteStaff(${s.id})">🗑</button>
+              </div></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>` : `<div class="empty"><div class="empty-icon">👩‍⚕️</div><p class="empty-text">Aucun personnel enregistré</p><button class="btn btn-primary" style="margin-top:14px" onclick="openNewStaff()">+ Ajouter le premier membre</button></div>`}
+  `;
+}
+window.openNewStaff=function(){
+  openModal(`
+    ${mHd('👩‍⚕️ Ajouter membre du personnel')}
+    <div class="form-grid">
+      <div class="form-group"><label class="lbl">Nom complet *</label><input id="s_name" class="form-control" placeholder="Dr. Nom Prénom"></div>
+      <div class="form-group"><label class="lbl">Rôle / Spécialité *</label><input id="s_role" class="form-control" placeholder="Gynécologue, Sage-femme…"></div>
+      <div class="form-group"><label class="lbl">Téléphone</label><input id="s_tel" class="form-control" placeholder="+229 XX XXX XXX"></div>
+      <div class="form-group"><label class="lbl">Email</label><input id="s_email" class="form-control" type="email" placeholder="email@clinique.bj"></div>
+    </div>
+    ${isAdmin()?`
+    <div class="divider"></div>
+    <div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:var(--radius-sm);padding:12px;margin-bottom:8px">
+      <div style="font-size:12px;font-weight:700;color:var(--blue2);margin-bottom:8px">🔑 Créer un accès système (optionnel)</div>
+      <div class="form-grid">
+        <div class="form-group"><label class="lbl">Nom d'utilisateur</label><input id="s_user" class="form-control" placeholder="username"></div>
+        <div class="form-group"><label class="lbl">Mot de passe</label><input id="s_pass" class="form-control" type="password" placeholder="••••••••"></div>
+      </div>
+    </div>` : `<div class="alert alert-warn">⚠️ Seul l'administrateur peut créer des comptes système</div>`}
+    ${mFt('💾 Enregistrer','saveNewStaff()')}
+  `);
+};
+window.saveNewStaff=function(){
+  const name=document.getElementById('s_name').value.trim();
+  const role=document.getElementById('s_role').value.trim();
+  if(!name){ toast('Nom requis','err'); return; }
+  const s={id:nextId(S.staff),name,role,tel:document.getElementById('s_tel').value||'',email:document.getElementById('s_email').value||''};
+  S.staff.push(s);
+  if(isAdmin()){
+    const u=document.getElementById('s_user')?.value.trim();
+    const p=document.getElementById('s_pass')?.value.trim();
+    if(u&&p){ S.users.push({username:u,password:p,name,role}); }
+  }
+  save(); closeModal(); showView('staff'); toast('Membre du personnel ajouté','ok');
+};
+window.editStaff=function(id){
+  const s=S.staff.find(x=>x.id===id); if(!s) return;
+  openModal(`
+    ${mHd('✏️ Modifier — '+esc(s.name))}
+    <div class="form-grid">
+      <div class="form-group"><label class="lbl">Nom complet</label><input id="s_name" class="form-control" value="${esc(s.name)}"></div>
+      <div class="form-group"><label class="lbl">Rôle</label><input id="s_role" class="form-control" value="${esc(s.role||'')}"></div>
+      <div class="form-group"><label class="lbl">Téléphone</label><input id="s_tel" class="form-control" value="${esc(s.tel||'')}"></div>
+      <div class="form-group"><label class="lbl">Email</label><input id="s_email" class="form-control" value="${esc(s.email||'')}"></div>
+    </div>
+    ${mFt('💾 Enregistrer',`saveEditedStaff(${id})`)}
+  `);
+};
+window.saveEditedStaff=function(id){
+  const s=S.staff.find(x=>x.id===id); if(!s) return;
+  s.name=document.getElementById('s_name').value;
+  s.role=document.getElementById('s_role').value;
+  s.tel=document.getElementById('s_tel').value;
+  s.email=document.getElementById('s_email').value;
+  save(); closeModal(); showView('staff'); toast('Membre mis à jour','ok');
+};
+window.deleteStaff=function(id){
+  if(!confirm('Supprimer ce membre du personnel ?')) return;
+  S.staff=S.staff.filter(x=>x.id!==id); save(); showView('staff'); toast('Membre supprimé','warn');
+};
+
+// ================================================================
+//  MATERNITY
+// ================================================================
+function renderMaternity(el){
+  el.innerHTML=`
+    <div class="section-hd">
+      <div class="section-title">Maternité / Accouchements <small>${S.maternity.length} enregistrés</small></div>
+      <div class="section-actions"><button class="btn btn-primary btn-sm" onclick="openNewMaternity()">+ Nouvel accouchement</button></div>
+    </div>
+    ${S.maternity.length ? `
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Mère</th><th>Date</th><th>Type d'accouchement</th><th>Bébé</th><th>Statut</th><th>Actions</th></tr></thead>
+          <tbody>
+            ${[...S.maternity].reverse().map(m=>{
+              const p=S.patients.find(x=>x.id===m.patientId)||{prenom:'?',nom:''};
+              return `<tr>
+                <td>#${m.id}</td>
+                <td>${esc(p.prenom)} ${esc(p.nom)}</td>
+                <td>${m.date||'—'}</td>
+                <td><span class="badge badge-cyan">${esc(m.type||'Voie basse')}</span></td>
+                <td>${m.babyWeight?`${m.babyWeight}kg · ${m.babySex||'?'}`:'—'}</td>
+                <td><span class="badge ${m.outcome==='Décédé'?'badge-red':'badge-green'}">${esc(m.outcome||'Vivant')}</span></td>
+                <td><div class="td-actions">
+                  <button class="btn btn-ghost btn-sm btn-icon" onclick="viewMaternity(${m.id})">👁</button>
+                  <button class="btn btn-danger btn-sm btn-icon" onclick="deleteMaternity(${m.id})">🗑</button>
+                </div></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>` : `<div class="empty"><div class="empty-icon">🤱</div><p class="empty-text">Aucun accouchement enregistré</p><button class="btn btn-primary" style="margin-top:14px" onclick="openNewMaternity()">+ Enregistrer un accouchement</button></div>`}
+  `;
+}
+window.openNewMaternity=function(){
+  const opts=S.patients.filter(p=>p.sexe==='F'||!p.sexe).map(p=>`<option value="${p.id}">${esc(p.prenom)} ${esc(p.nom)} ${p.pregnancy_weeks?'('+p.pregnancy_weeks+' SA)':''}</option>`).join('');
+  openModal(`
+    ${mHd('🤱 Enregistrer un accouchement')}
+    <div class="form-grid">
+      <div class="form-group full"><label class="lbl">Patiente *</label><select id="m_patient" class="form-control">${opts||'<option>Aucune patiente</option>'}</select></div>
+      <div class="form-group"><label class="lbl">Date d'accouchement</label><input id="m_date" class="form-control" type="date" value="${today()}"></div>
+      <div class="form-group"><label class="lbl">Heure</label><input id="m_time" class="form-control" type="time"></div>
+      <div class="form-group"><label class="lbl">Type d'accouchement</label>
+        <select id="m_type" class="form-control"><option>Voie basse</option><option>Césarienne</option><option>Forceps</option><option>Ventouse</option></select>
+      </div>
+      <div class="form-group"><label class="lbl">Semaines d'aménorrhée</label><input id="m_sa" class="form-control" placeholder="Ex: 39"></div>
+      <div class="form-group"><label class="lbl">Poids du bébé (kg)</label><input id="m_bweight" class="form-control" placeholder="3.2"></div>
+      <div class="form-group"><label class="lbl">Sexe du bébé</label>
+        <select id="m_bsex" class="form-control"><option value="">—</option><option value="Garçon">Garçon</option><option value="Fille">Fille</option></select>
+      </div>
+      <div class="form-group"><label class="lbl">Score d'Apgar</label><input id="m_apgar" class="form-control" placeholder="8/10"></div>
+      <div class="form-group full"><label class="lbl">Issu de l'accouchement</label>
+        <select id="m_outcome" class="form-control"><option value="Vivant">Vivant</option><option value="Décédé">Décédé</option><option value="Complications">Complications</option></select>
+      </div>
+      <div class="form-group full"><label class="lbl">Médecin / Sage-femme présent(e)</label><input id="m_doctor" class="form-control" list="staff-list-m" placeholder="Nom">
+        <datalist id="staff-list-m">${S.staff.map(s=>`<option value="${esc(s.name)}">`).join('')}</datalist>
+      </div>
+      <div class="form-group full"><label class="lbl">Complications / Observations</label><textarea id="m_details" class="form-control" placeholder="Complications, notes médicales…"></textarea></div>
+    </div>
+    ${mFt('💾 Enregistrer','saveNewMaternity()')}
+  `);
+};
+window.saveNewMaternity=function(){
+  const patientId=parseInt(document.getElementById('m_patient').value);
+  if(!patientId){ toast('Patiente requise','err'); return; }
+  S.maternity.push({
+    id:nextId(S.maternity), patientId,
+    date:document.getElementById('m_date').value||today(),
+    time:document.getElementById('m_time').value||'',
+    type:document.getElementById('m_type').value||'Voie basse',
+    sa:document.getElementById('m_sa').value||'',
+    babyWeight:document.getElementById('m_bweight').value||'',
+    babySex:document.getElementById('m_bsex').value||'',
+    apgar:document.getElementById('m_apgar').value||'',
+    outcome:document.getElementById('m_outcome').value||'Vivant',
+    doctor:document.getElementById('m_doctor').value||'',
+    details:document.getElementById('m_details').value||''
+  });
+  save(); closeModal(); showView('maternity'); toast('Accouchement enregistré','ok');
+};
+window.viewMaternity=function(id){
+  const m=S.maternity.find(x=>x.id===id); if(!m) return;
+  const p=S.patients.find(x=>x.id===m.patientId)||{prenom:'?',nom:''};
+  openModal(`
+    ${mHd('🤱 Accouchement — '+esc(p.prenom)+' '+esc(p.nom))}
+    <div class="detail-grid">
+      <div class="detail-item"><div class="d-lbl">Mère</div><div class="d-val">${esc(p.prenom)} ${esc(p.nom)}</div></div>
+      <div class="detail-item"><div class="d-lbl">Date · Heure</div><div class="d-val">${m.date||'—'} ${m.time?'à '+m.time:''}</div></div>
+      <div class="detail-item"><div class="d-lbl">Type</div><div class="d-val"><span class="badge badge-cyan">${esc(m.type||'—')}</span></div></div>
+      <div class="detail-item"><div class="d-lbl">SA</div><div class="d-val">${m.sa||'—'}</div></div>
+      <div class="detail-item"><div class="d-lbl">Poids bébé</div><div class="d-val">${m.babyWeight?m.babyWeight+'kg':'—'}</div></div>
+      <div class="detail-item"><div class="d-lbl">Sexe bébé</div><div class="d-val">${esc(m.babySex||'—')}</div></div>
+      <div class="detail-item"><div class="d-lbl">Apgar</div><div class="d-val">${esc(m.apgar||'—')}</div></div>
+      <div class="detail-item"><div class="d-lbl">Issu</div><div class="d-val"><span class="badge ${m.outcome==='Décédé'?'badge-red':'badge-green'}">${esc(m.outcome||'—')}</span></div></div>
+      <div class="detail-item"><div class="d-lbl">Médecin</div><div class="d-val">${esc(m.doctor||'—')}</div></div>
+      ${m.details?`<div class="detail-item" style="grid-column:1/-1"><div class="d-lbl">Observations</div><div class="d-val">${esc(m.details)}</div></div>`:''}
+    </div>
+    <div class="modal-ft"><button class="btn btn-ghost btn-sm" onclick="closeModal()">Fermer</button></div>
+  `);
+};
+window.deleteMaternity=function(id){
+  if(!confirm('Supprimer cet enregistrement ?')) return;
+  S.maternity=S.maternity.filter(x=>x.id!==id); save(); showView('maternity'); toast('Enregistrement supprimé','warn');
+};
+
+// ================================================================
+//  TREASURY
+// ================================================================
+function renderTreasury(el){
+  const income=S.treasury.transactions.filter(t=>t.type==='in').reduce((s,t)=>s+parseFloat(t.amount||0),0);
+  const expenses=S.treasury.transactions.filter(t=>t.type==='out').reduce((s,t)=>s+parseFloat(t.amount||0),0);
+  el.innerHTML=`
+    <div class="section-hd">
+      <div class="section-title">Trésorerie</div>
+      <div class="section-actions">
+        <button class="btn btn-success btn-sm" onclick="openNewTransaction('in')">+ Encaissement</button>
+        <button class="btn btn-danger btn-sm" onclick="openNewTransaction('out')">− Décaissement</button>
+      </div>
+    </div>
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat-card blue"><div class="stat-icon blue">🏦</div><div class="stat-val" style="font-size:20px">${fmt(S.treasury.balance)}</div><div class="stat-lbl">Solde actuel</div></div>
+      <div class="stat-card green"><div class="stat-icon green">📈</div><div class="stat-val" style="font-size:20px">${fmt(income)}</div><div class="stat-lbl">Total encaissé</div></div>
+      <div class="stat-card red"><div class="stat-icon red">📉</div><div class="stat-val" style="font-size:20px">${fmt(expenses)}</div><div class="stat-lbl">Total décaissé</div></div>
+    </div>
+    ${S.treasury.transactions.length ? `
+    <div class="card">
+      <div style="font-size:14px;font-weight:800;margin-bottom:12px">📋 Historique des transactions</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Type</th><th>Montant</th><th>Date</th><th>Commentaire</th><th>Actions</th></tr></thead>
+          <tbody>
+            ${[...S.treasury.transactions].reverse().map(t=>`<tr>
+              <td><span style="font-family:monospace;color:var(--text3)">#${t.id}</span></td>
+              <td>${t.type==='in'?'<span class="badge badge-green">📈 Entrée</span>':'<span class="badge badge-red">📉 Sortie</span>'}</td>
+              <td><strong style="color:${t.type==='in'?'var(--green2)':'#fca5a5'}">${t.type==='in'?'+':'−'}${fmt(t.amount)}</strong></td>
+              <td>${t.date||'—'}</td>
+              <td>${esc(t.comment||'—')}</td>
+              <td><button class="btn btn-danger btn-sm btn-icon" onclick="deleteTx(${t.id})">🗑</button></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>` : `<div class="empty"><div class="empty-icon">🏦</div><p class="empty-text">Aucune transaction enregistrée</p></div>`}
+  `;
+}
+window.openNewTransaction=function(defaultType){
+  openModal(`
+    ${mHd('💰 Nouvelle transaction')}
+    <div class="form-grid">
+      <div class="form-group full"><label class="lbl">Type *</label>
+        <select id="t_type" class="form-control">
+          <option value="in" ${defaultType==='in'?'selected':''}>📈 Encaissement (Entrée)</option>
+          <option value="out" ${defaultType==='out'?'selected':''}>📉 Décaissement (Sortie)</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="lbl">Montant (FCFA) *</label><input id="t_amount" class="form-control" type="number" placeholder="10000" min="0"></div>
+      <div class="form-group"><label class="lbl">Date</label><input id="t_date" class="form-control" type="date" value="${today()}"></div>
+      <div class="form-group full"><label class="lbl">Commentaire</label><input id="t_comment" class="form-control" placeholder="Motif de la transaction…"></div>
+    </div>
+    ${mFt('💾 Enregistrer','saveTransaction()')}
+  `);
+};
+window.saveTransaction=function(){
+  const type=document.getElementById('t_type').value;
+  const amount=parseFloat(document.getElementById('t_amount').value||0);
+  if(!amount){ toast('Montant requis','err'); return; }
+  if(type==='in') S.treasury.balance+=amount; else S.treasury.balance-=amount;
+  S.treasury.transactions.push({id:nextId(S.treasury.transactions),type,amount,date:document.getElementById('t_date').value||today(),comment:document.getElementById('t_comment').value||''});
+  save(); closeModal(); showView('treasury'); toast(`${type==='in'?'Encaissement':'Décaissement'} enregistré : ${fmt(amount)}`,'ok');
+};
+window.deleteTx=function(id){
+  if(!confirm('Supprimer cette transaction ? Le solde sera recalculé.')) return;
+  const tx=S.treasury.transactions.find(x=>x.id===id); if(!tx) return;
+  if(tx.type==='in') S.treasury.balance-=parseFloat(tx.amount||0);
+  else S.treasury.balance+=parseFloat(tx.amount||0);
+  S.treasury.transactions=S.treasury.transactions.filter(x=>x.id!==id);
+  save(); showView('treasury'); toast('Transaction supprimée','warn');
+};
+
+// ================================================================
+//  EMERGENCY MEDS
+// ================================================================
+function renderEmergency(el){
+  el.innerHTML=`
+    <div class="section-hd">
+      <div class="section-title">Médicaments d'urgence <small>${S.emergency_meds.length}</small></div>
+      <div class="section-actions"><button class="btn btn-primary btn-sm" onclick="openNewMed()">+ Ajouter médicament</button></div>
+    </div>
+    ${S.emergency_meds.length ? `
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Médicament</th><th>Quantité</th><th>Unité</th><th>Alerte stock</th><th>Remarques</th><th>Actions</th></tr></thead>
+          <tbody>
+            ${S.emergency_meds.map(m=>{
+              const low=parseInt(m.qty||0)<=parseInt(m.alertQty||3);
+              return `<tr>
+                <td>#${m.id}</td>
+                <td><strong>${esc(m.name)}</strong></td>
+                <td><span class="badge ${low?'badge-red':'badge-green'}">${m.qty}</span></td>
+                <td>${esc(m.unit||'unités')}</td>
+                <td>${low?'<span class="badge badge-red">⚠️ Stock bas</span>':'<span class="badge badge-green">✓ OK</span>'}</td>
+                <td>${esc(m.note||'—')}</td>
+                <td><div class="td-actions">
+                  <button class="btn btn-ghost btn-sm btn-icon" onclick="editMed(${m.id})">✏️</button>
+                  <button class="btn btn-danger btn-sm btn-icon" onclick="deleteMed(${m.id})">🗑</button>
+                </div></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      ${S.emergency_meds.some(m=>parseInt(m.qty||0)<=parseInt(m.alertQty||3))?`<div class="alert alert-warn" style="margin-top:12px">⚠️ Certains médicaments ont un stock bas. Veuillez réapprovisionner.</div>`:''}
+    </div>` : `<div class="empty"><div class="empty-icon">🚑</div><p class="empty-text">Aucun médicament d'urgence enregistré</p><button class="btn btn-primary" style="margin-top:14px" onclick="openNewMed()">+ Ajouter le premier médicament</button></div>`}
+  `;
+}
+window.openNewMed=function(){
+  openModal(`
+    ${mHd('🚑 Ajouter médicament d\'urgence')}
+    <div class="form-grid">
+      <div class="form-group full"><label class="lbl">Nom du médicament *</label><input id="m_name" class="form-control" placeholder="Adrénaline, Oxytocine…"></div>
+      <div class="form-group"><label class="lbl">Quantité en stock</label><input id="m_qty" class="form-control" type="number" placeholder="10" min="0"></div>
+      <div class="form-group"><label class="lbl">Unité</label><input id="m_unit" class="form-control" placeholder="ampoules, comprimés…"></div>
+      <div class="form-group"><label class="lbl">Seuil alerte (quantité min)</label><input id="m_alert" class="form-control" type="number" placeholder="3" min="0"></div>
+      <div class="form-group"><label class="lbl">Date d'expiration</label><input id="m_exp" class="form-control" type="date"></div>
+      <div class="form-group full"><label class="lbl">Remarques</label><textarea id="m_note" class="form-control" placeholder="Conditions de stockage, précautions…"></textarea></div>
+    </div>
+    ${mFt('💾 Enregistrer','saveNewMed()')}
+  `);
+};
+window.saveNewMed=function(){
+  const name=document.getElementById('m_name').value.trim();
+  if(!name){ toast('Nom requis','err'); return; }
+  S.emergency_meds.push({id:nextId(S.emergency_meds),name,qty:parseInt(document.getElementById('m_qty').value||0),unit:document.getElementById('m_unit').value||'',alertQty:parseInt(document.getElementById('m_alert').value||3),expiry:document.getElementById('m_exp').value||'',note:document.getElementById('m_note').value||''});
+  save(); closeModal(); showView('emergency'); toast('Médicament ajouté','ok');
+};
+window.editMed=function(id){
+  const m=S.emergency_meds.find(x=>x.id===id); if(!m) return;
+  openModal(`
+    ${mHd('✏️ Modifier — '+esc(m.name))}
+    <div class="form-grid">
+      <div class="form-group full"><label class="lbl">Nom</label><input id="m_name" class="form-control" value="${esc(m.name)}"></div>
+      <div class="form-group"><label class="lbl">Quantité</label><input id="m_qty" class="form-control" type="number" value="${m.qty||0}"></div>
+      <div class="form-group"><label class="lbl">Unité</label><input id="m_unit" class="form-control" value="${esc(m.unit||'')}"></div>
+      <div class="form-group"><label class="lbl">Seuil alerte</label><input id="m_alert" class="form-control" type="number" value="${m.alertQty||3}"></div>
+      <div class="form-group"><label class="lbl">Date d'expiration</label><input id="m_exp" class="form-control" type="date" value="${m.expiry||''}"></div>
+      <div class="form-group full"><label class="lbl">Remarques</label><textarea id="m_note" class="form-control">${esc(m.note||'')}</textarea></div>
+    </div>
+    ${mFt('💾 Enregistrer',`saveEditedMed(${id})`)}
+  `);
+};
+window.saveEditedMed=function(id){
+  const m=S.emergency_meds.find(x=>x.id===id); if(!m) return;
+  m.name=document.getElementById('m_name').value;
+  m.qty=parseInt(document.getElementById('m_qty').value||0);
+  m.unit=document.getElementById('m_unit').value;
+  m.alertQty=parseInt(document.getElementById('m_alert').value||3);
+  m.expiry=document.getElementById('m_exp').value;
+  m.note=document.getElementById('m_note').value;
+  save(); closeModal(); showView('emergency'); toast('Médicament mis à jour','ok');
+};
+window.deleteMed=function(id){
+  if(!confirm('Supprimer ce médicament ?')) return;
+  S.emergency_meds=S.emergency_meds.filter(x=>x.id!==id); save(); showView('emergency'); toast('Médicament supprimé','warn');
+};
+
+// ================================================================
+//  PRICES
+// ================================================================
+function renderPrices(el){
+  el.innerHTML=`
+    <div class="section-hd">
+      <div class="section-title">Grille tarifaire <small>${S.price_list.length} prestations</small></div>
+      <div class="section-actions"><button class="btn btn-primary btn-sm" onclick="openNewPrice()">+ Ajouter tarif</button></div>
+    </div>
+    ${S.price_list.length ? `
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Prestation</th><th>Catégorie</th><th>Prix (FCFA)</th><th>Actions</th></tr></thead>
+          <tbody>
+            ${S.price_list.map(p=>`<tr>
+              <td>#${p.id}</td>
+              <td><strong>${esc(p.name)}</strong></td>
+              <td>${p.category?`<span class="badge badge-violet">${esc(p.category)}</span>`:'<span class="badge badge-gray">—</span>'}</td>
+              <td><strong style="color:var(--green2)">${fmt(p.price)}</strong></td>
+              <td><div class="td-actions">
+                <button class="btn btn-ghost btn-sm btn-icon" onclick="editPrice(${p.id})">✏️</button>
+                <button class="btn btn-danger btn-sm btn-icon" onclick="deletePrice(${p.id})">🗑</button>
+              </div></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>` : `<div class="empty"><div class="empty-icon">💼</div><p class="empty-text">Aucun tarif enregistré</p><button class="btn btn-primary" style="margin-top:14px" onclick="openNewPrice()">+ Ajouter le premier tarif</button></div>`}
+  `;
+}
+window.openNewPrice=function(){
+  openModal(`
+    ${mHd('💼 Ajouter tarif')}
+    <div class="form-grid">
+      <div class="form-group full"><label class="lbl">Prestation *</label><input id="pr_name" class="form-control" placeholder="Consultation prénatale, Echographie…"></div>
+      <div class="form-group"><label class="lbl">Prix (FCFA) *</label><input id="pr_price" class="form-control" type="number" placeholder="5000" min="0"></div>
+      <div class="form-group"><label class="lbl">Catégorie</label>
+        <input id="pr_cat" class="form-control" list="cat-list" placeholder="Consultation, Imagerie…">
+        <datalist id="cat-list"><option>Consultation</option><option>Imagerie / Echographie</option><option>Accouchement</option><option>Laboratoire</option><option>Chirurgie</option><option>Urgence</option><option>Vaccination</option></datalist>
+      </div>
+    </div>
+    ${mFt('💾 Enregistrer','saveNewPrice()')}
+  `);
+};
+window.saveNewPrice=function(){
+  const name=document.getElementById('pr_name').value.trim();
+  const price=parseFloat(document.getElementById('pr_price').value||0);
+  if(!name||!price){ toast('Prestation et prix requis','err'); return; }
+  S.price_list.push({id:nextId(S.price_list),name,price,category:document.getElementById('pr_cat').value||''});
+  save(); closeModal(); showView('prices'); toast('Tarif ajouté','ok');
+};
+window.editPrice=function(id){
+  const p=S.price_list.find(x=>x.id===id); if(!p) return;
+  openModal(`
+    ${mHd('✏️ Modifier tarif')}
+    <div class="form-grid">
+      <div class="form-group full"><label class="lbl">Prestation</label><input id="pr_name" class="form-control" value="${esc(p.name)}"></div>
+      <div class="form-group"><label class="lbl">Prix (FCFA)</label><input id="pr_price" class="form-control" type="number" value="${p.price}"></div>
+      <div class="form-group"><label class="lbl">Catégorie</label><input id="pr_cat" class="form-control" value="${esc(p.category||'')}"></div>
+    </div>
+    ${mFt('💾 Enregistrer',`saveEditedPrice(${id})`)}
+  `);
+};
+window.saveEditedPrice=function(id){
+  const p=S.price_list.find(x=>x.id===id); if(!p) return;
+  p.name=document.getElementById('pr_name').value;
+  p.price=parseFloat(document.getElementById('pr_price').value||0);
+  p.category=document.getElementById('pr_cat').value;
+  save(); closeModal(); showView('prices'); toast('Tarif mis à jour','ok');
+};
+window.deletePrice=function(id){
+  if(!confirm('Supprimer ce tarif ?')) return;
+  S.price_list=S.price_list.filter(x=>x.id!==id); save(); showView('prices'); toast('Tarif supprimé','warn');
+};
+
+// ================================================================
+//  REPORTS
+// ================================================================
+function renderReports(el){
+  const bySex=S.patients.reduce((a,p)=>{ a[p.sexe||'Non renseigné']=(a[p.sexe||'Non renseigné']||0)+1; return a; },{});
+  const totalPaid=S.invoices.filter(i=>i.paid).reduce((s,i)=>s+parseFloat(i.amount||0),0);
+  const totalUnpaid=S.invoices.filter(i=>!i.paid).reduce((s,i)=>s+parseFloat(i.amount||0),0);
+  const rxByDoc=S.consultations.reduce((a,c)=>{ const k=c.doctor||'Non assigné'; a[k]=(a[k]||0)+1; return a; },{});
+  const byMonth=S.patients.reduce((a,p)=>{ if(p.createdAt){const m=p.createdAt.slice(0,7); a[m]=(a[m]||0)+1;} return a; },{});
+
+  el.innerHTML=`
+    <div class="section-hd">
+      <div class="section-title">Statistiques & Rapports</div>
+      <div class="section-actions">
+        <button class="btn btn-ghost btn-sm" onclick="downloadJSON()">⬇ Exporter données</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card">
+        <div style="font-size:14px;font-weight:800;margin-bottom:14px">👤 Patients par sexe</div>
+        ${Object.keys(bySex).length ? Object.entries(bySex).map(([k,v])=>`
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="font-size:13px">${k}</span>
+              <strong>${v} (${Math.round(v/S.patients.length*100)}%)</strong>
+            </div>
+            <div style="height:6px;background:var(--surface);border-radius:3px">
+              <div style="height:100%;width:${v/S.patients.length*100}%;background:linear-gradient(90deg,var(--blue),var(--violet));border-radius:3px"></div>
+            </div>
+          </div>`).join('') : '<p style="color:var(--text3)">Aucun patient</p>'}
+      </div>
+      <div class="card">
+        <div style="font-size:14px;font-weight:800;margin-bottom:14px">💳 Facturation</div>
+        <div class="timeline">
+          <div class="tl-item"><div class="tl-dot green">✓</div><div class="tl-body"><div class="tl-title">${fmt(totalPaid)}</div><div class="tl-meta">Total encaissé · ${S.invoices.filter(i=>i.paid).length} facture(s)</div></div></div>
+          <div class="tl-item"><div class="tl-dot amber">⏳</div><div class="tl-body"><div class="tl-title">${fmt(totalUnpaid)}</div><div class="tl-meta">En attente · ${S.invoices.filter(i=>!i.paid).length} facture(s)</div></div></div>
+          <div class="tl-item"><div class="tl-dot blue">🏦</div><div class="tl-body"><div class="tl-title">${fmt(S.treasury.balance)}</div><div class="tl-meta">Solde trésorerie</div></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:14px;font-weight:800;margin-bottom:14px">🩺 Consultations par médecin</div>
+        ${Object.keys(rxByDoc).length ? Object.entries(rxByDoc).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:13px">${esc(k)}</span>
+            <span class="badge badge-blue">${v} consultation(s)</span>
+          </div>`).join('') : '<p style="color:var(--text3)">Aucune consultation</p>'}
+      </div>
+      <div class="card">
+        <div style="font-size:14px;font-weight:800;margin-bottom:14px">📊 Vue d'ensemble</div>
+        <div class="timeline">
+          <div class="tl-item"><div class="tl-dot blue">🧾</div><div class="tl-body"><div class="tl-title">${S.patients.length} patient(s)</div><div class="tl-meta">Enregistrés dans le système</div></div></div>
+          <div class="tl-item"><div class="tl-dot green">📅</div><div class="tl-body"><div class="tl-title">${S.appointments.length} RDV</div><div class="tl-meta">Planifiés</div></div></div>
+          <div class="tl-item"><div class="tl-dot amber">🩺</div><div class="tl-body"><div class="tl-title">${S.consultations.length} consultation(s)</div><div class="tl-meta">Réalisées</div></div></div>
+          <div class="tl-item"><div class="tl-dot blue">🤱</div><div class="tl-body"><div class="tl-title">${S.maternity.length} accouchement(s)</div><div class="tl-meta">Enregistrés</div></div></div>
+          <div class="tl-item"><div class="tl-dot green">🔬</div><div class="tl-body"><div class="tl-title">${S.lab.length} analyse(s)</div><div class="tl-meta">Total labo · ${S.lab.filter(l=>!l.result).length} en attente</div></div></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ================================================================
+//  SETTINGS
+// ================================================================
+function renderSettings(el){
+  if(!isAdmin()){
+    el.innerHTML=`<div class="card" style="text-align:center;padding:48px"><div style="font-size:48px">🔒</div><div style="color:var(--text3);margin-top:12px;font-size:14px">Accès réservé à l'administrateur</div></div>`;
+    return;
+  }
+  el.innerHTML=`
+    <div class="section-hd">
+      <div class="section-title">Paramètres système</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card">
+        <div style="font-size:14px;font-weight:800;margin-bottom:14px">👥 Comptes utilisateurs</div>
+        <div class="table-wrap" style="margin-bottom:14px">
+          <table>
+            <thead><tr><th>Utilisateur</th><th>Nom</th><th>Rôle</th><th>Action</th></tr></thead>
+            <tbody>
+              ${S.users.map(u=>`<tr>
+                <td><strong>${esc(u.username)}</strong></td>
+                <td>${esc(u.name||'-')}</td>
+                <td><span class="badge badge-blue">${esc(u.role||'Utilisateur')}</span></td>
+                <td>${u.username==='DJOSSOU'?'<span style="color:var(--text3);font-size:11px">protégé</span>':`<button class="btn btn-danger btn-sm" onclick="deleteUser('${esc(u.username)}')">🗑</button>`}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openCreateUser()">➕ Créer un compte</button>
+      </div>
+      <div class="card">
+        <div style="font-size:14px;font-weight:800;margin-bottom:14px">💾 Données du système</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:12px">
+          Toutes les données sont stockées localement dans le navigateur (localStorage).<br>
+          Veillez à exporter régulièrement une sauvegarde JSON.
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="downloadJSON()">⬇ Exporter backup JSON</button>
+          <button class="btn btn-ghost btn-sm" onclick="importJSON()">⬆ Importer données JSON</button>
+          <div class="divider"></div>
+          <button class="btn btn-danger btn-sm" onclick="resetAll()">⚠️ Réinitialiser toutes les données</button>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:14px;font-weight:800;margin-bottom:14px">ℹ️ Informations clinique</div>
+        <div style="font-size:13px;line-height:2;color:var(--text2)">
+          <div><strong style="color:var(--text)">Clinique Médicale Kpondehou</strong></div>
+          <div>LOT 825 GANKPODO-AKPAKPA-COTONOU-BÉNIN</div>
+          <div>Tél : 0147636375</div>
+          <div>IFU : 0202113100026</div>
+          <div>Autorisation : 096/MS/DS/SGM/CCJ/DNSP/SRS/SA/112GG21</div>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:14px;font-weight:800;margin-bottom:14px">📊 Utilisation du stockage</div>
+        <div style="font-size:13px;color:var(--text2);line-height:2">
+          <div>Patients : <strong>${S.patients.length}</strong></div>
+          <div>Consultations : <strong>${S.consultations.length}</strong></div>
+          <div>Factures : <strong>${S.invoices.length}</strong></div>
+          <div>Transactions : <strong>${S.treasury.transactions.length}</strong></div>
+          <div>Taille données : <strong>${(JSON.stringify(S).length/1024).toFixed(1)} Ko</strong></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ================================================================
+//  GESTION DES COMPTES UTILISATEURS (hors renderSettings)
+// ================================================================
+window.openCreateUser=function(){
+  if(!isAdmin()){ toast("Accès refusé",'err'); return; }
+  openModal(`
+    ${mHd('➕ Créer un compte utilisateur')}
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="lbl">Nom d'utilisateur</label>
+        <input id="newUsername" class="form-control" placeholder="ex: CAISSE01">
+      </div>
+      <div class="form-group">
+        <label class="lbl">Nom complet</label>
+        <input id="newName" class="form-control" placeholder="ex: Marie Dupont">
+      </div>
+      <div class="form-group">
+        <label class="lbl">Mot de passe</label>
+        <input id="newPassword" class="form-control" type="password" placeholder="••••••••">
+      </div>
+      <div class="form-group">
+        <label class="lbl">Rôle</label>
+        <select id="newRole" class="form-control">
+          <option value="Caissière">Caissière</option>
+          <option value="Personnel médical">Personnel médical</option>
+          <option value="Médecin">Médecin</option>
+          <option value="Personnalisé">Personnalisé</option>
+        </select>
+      </div>
+    </div>
+    ${mFt('Créer le compte','saveNewUser()')}
+  `,'modal-sm');
+};
+
+window.saveNewUser=function(){
+  const username=document.getElementById('newUsername').value.trim().toUpperCase();
+  const name=document.getElementById('newName').value.trim();
+  const password=document.getElementById('newPassword').value;
+  const role=document.getElementById('newRole').value;
+  if(!username||!password){ toast('Identifiant et mot de passe requis','err'); return; }
+  if(S.users.find(u=>u.username===username)){ toast('Cet identifiant existe déjà','err'); return; }
+  S.users.push({username,password,name:name||username,role});
+  save(); closeModal();
+  toast(`Compte ${username} créé avec succès`,'ok');
+  showView('settings');
+};
+
+window.deleteUser=function(username){
+  if(!isAdmin()){ toast("Accès refusé",'err'); return; }
+  if(username==='DJOSSOU'){ toast("Impossible de supprimer l'admin principal",'err'); return; }
+  if(!confirm(`Supprimer le compte "${username}" ?`)) return;
+  S.users=S.users.filter(u=>u.username!==username);
+  save(); toast('Compte supprimé','warn');
+  showView('settings');
+};
+
+window.resetAll=function(){
+  if(!isAdmin()){ toast("Seul l'administrateur peut réinitialiser le système",'err'); return; }
+  const confirm1=confirm('⚠️ ATTENTION : Cette action supprimera TOUTES les données (patients, consultations, factures, etc.). Cette action est IRRÉVERSIBLE.');
+  if(!confirm1) return;
+  const confirm2=confirm('Êtes-vous ABSOLUMENT sûr ? Tapez OK pour confirmer la suppression totale.');
+  if(!confirm2) return;
+  localStorage.removeItem(STORAGE_KEY);
+  S=JSON.parse(JSON.stringify(DEFAULT));
+  save();
+  toast('Système réinitialisé','warn');
+  showView('dashboard');
+};
+window.downloadJSON=function(){
+  const a=document.createElement('a');
+  a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(S,null,2));
+  a.download='clinique_kpondehou_backup_'+today()+'.json';
+  a.click();
+  toast('Backup JSON téléchargé','ok');
+};
+window.importJSON=function(){
+  const input=document.createElement('input');
+  input.type='file'; input.accept='.json';
+  input.addEventListener('change',e=>{
+    const file=e.target.files[0]; if(!file) return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const data=JSON.parse(ev.target.result);
+        if(!data.patients||!data.users){ toast('Fichier JSON invalide','err'); return; }
+        if(!confirm('Importer ces données ? Cela remplacera les données actuelles.')) return;
+        S=data; save(); showView('dashboard');
+        toast('Données importées avec succès','ok');
+      }catch(e){ toast('Erreur lors de la lecture du fichier','err'); }
+    };
+    reader.readAsText(file);
+  });
+  input.click();
+};
+
+// ================================================================
+//  SEARCH
+// ================================================================
+document.getElementById('globalSearch').addEventListener('input', e=>{
+  const q=e.target.value.trim().toLowerCase(); if(!q) return;
+  const p=S.patients.find(x=>(`${x.prenom} ${x.nom}`).toLowerCase().includes(q)||(x.tel||'').includes(q));
+  if(p){ showView('patients'); setTimeout(()=>viewPatient(p.id),300); return; }
+  const a=S.appointments.find(x=>(x.motif||'').toLowerCase().includes(q));
+  if(a){ showView('appointments'); return; }
+});
+
+// ================================================================
+//  INIT
+// ================================================================
+document.getElementById('loginBtn').addEventListener('click', doLogin);
+</script>
+</body>
+</html>
